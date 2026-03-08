@@ -101,6 +101,13 @@ Triggers:
 - Pull requests to `main` or `master`
 - Manual dispatch
 
+## Branch and PR Practices
+
+- Create feature branches from `main` (e.g. `feat/my-feature`, `fix/my-fix`).
+- Open a pull request against `main`; CI must pass before merging.
+- Keep pull requests focused; avoid mixing unrelated changes.
+- Squash or rebase before merging to keep history clean.
+
 ## Project Structure
 
 ```
