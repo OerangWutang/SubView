@@ -132,16 +132,24 @@ export class IncrementalTextObserver {
     const rootNodes = new Set<Node>();
     for (const node of this.queue) {
       let isRedundant = false;
-      let parent = node.parentNode;
-      while (parent) {
-        if (this.queue.has(parent)) {
+      for (const root of rootNodes) {
+        if (root.contains(node)) {
           isRedundant = true;
           break;
         }
-        parent = parent.parentNode;
       }
 
       if (!isRedundant) {
+        // This node is a new root. Collect any existing roots it contains, then remove them.
+        const dominated: Node[] = [];
+        for (const existing of rootNodes) {
+          if (node.contains(existing)) {
+            dominated.push(existing);
+          }
+        }
+        for (const n of dominated) {
+          rootNodes.delete(n);
+        }
         rootNodes.add(node);
       }
     }

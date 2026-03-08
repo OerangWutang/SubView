@@ -33,6 +33,29 @@ function keywordRegexes(values: string[]): RegExp[] {
   return values.filter(Boolean).map((value) => new RegExp(escapeRegex(value), "i"));
 }
 
+type CompiledRegexes = {
+  key: string;
+  trial: RegExp[];
+  renewal: RegExp[];
+  subscription: RegExp[];
+};
+
+let cachedRegexes: CompiledRegexes | null = null;
+
+function getCompiledRegexes(overrides?: KeywordOverrides): CompiledRegexes {
+  const key = JSON.stringify(overrides ?? {});
+  if (cachedRegexes !== null && cachedRegexes.key === key) {
+    return cachedRegexes;
+  }
+  cachedRegexes = {
+    key,
+    trial: [...BASE_TRIAL_REGEX, ...keywordRegexes(overrides?.trial ?? [])],
+    renewal: [...BASE_RENEWAL_REGEX, ...keywordRegexes(overrides?.renewal ?? [])],
+    subscription: [...BASE_SUBSCRIPTION_REGEX, ...keywordRegexes(overrides?.subscription ?? [])]
+  };
+  return cachedRegexes;
+}
+
 function isCandidateVisible(element?: Element | null): boolean {
   if (!element) {
     return true;
@@ -101,7 +124,7 @@ function extractTrialDays(text: string): { days: number; evidence?: string } | n
 
 function extractPriceAfterTrial(text: string): string | undefined {
   const match = text.match(
-    /(?:then|renew(?:s|al)?(?:\s+at|\s+on)?|billed|charged)[^$€£¥₹\d]{0,20}((?:[$€£¥₹]|USD|CAD|AUD|GBP|EUR)\s?\d+(?:[.,]\d{1,2})?(?:\s*\/?\s*(?:month|year|week|mo|yr))?)/i
+    /(?:then|renew(?:s|al)?(?:\s+at|\s+on)?|billed|charged)[^$€£¥₹\d]{0,20}((?:[$€£¥₹]|USD|CAD|AUD|GBP|EUR)\s?\d+(?:[.,]\d{1,2})?(?:\s*(?:\/|per\s*)?\s*(?:month|year|week|mo|yr))?)/i
   );
   return match?.[1]?.replace(/\s+/g, " ").trim();
 }
@@ -131,9 +154,9 @@ export function detectSubscriptionContext(args: {
   contextLoader: () => CheckoutContextResult;
   overrides?: KeywordOverrides;
 }): DetectionResult | null {
-  const trialRegexes = [...BASE_TRIAL_REGEX, ...keywordRegexes(args.overrides?.trial ?? [])];
-  const renewalRegexes = [...BASE_RENEWAL_REGEX, ...keywordRegexes(args.overrides?.renewal ?? [])];
-  const subscriptionRegexes = [...BASE_SUBSCRIPTION_REGEX, ...keywordRegexes(args.overrides?.subscription ?? [])];
+  const { trial: trialRegexes, renewal: renewalRegexes, subscription: subscriptionRegexes } = getCompiledRegexes(
+    args.overrides
+  );
 
   const evidence = new Set<string>();
   let trialDays: number | undefined;
@@ -143,6 +166,17 @@ export function detectSubscriptionContext(args: {
   let trialHits = 0;
   let renewalHits = 0;
   let subscriptionHits = 0;
+
+  const visibilityCache = new Map<Element, boolean>();
+
+  function isCandidateVisibleCached(element?: Element | null): boolean {
+    if (!element) return true;
+    const cached = visibilityCache.get(element);
+    if (cached !== undefined) return cached;
+    const result = isCandidateVisible(element);
+    visibilityCache.set(element, result);
+    return result;
+  }
 
   for (const candidate of args.candidates) {
     if (!candidate.text) {
@@ -158,7 +192,7 @@ export function detectSubscriptionContext(args: {
       if (!regex.test(text)) {
         return false;
       }
-      if (!isCandidateVisible(candidate.element)) {
+      if (!isCandidateVisibleCached(candidate.element)) {
         return false;
       }
       evidence.add(`trial:regex_${idx}`);
@@ -169,7 +203,7 @@ export function detectSubscriptionContext(args: {
       if (!regex.test(text)) {
         return false;
       }
-      if (!isCandidateVisible(candidate.element)) {
+      if (!isCandidateVisibleCached(candidate.element)) {
         return false;
       }
       evidence.add(`renewal:regex_${idx}`);
@@ -180,7 +214,7 @@ export function detectSubscriptionContext(args: {
       if (!regex.test(text)) {
         return false;
       }
-      if (!isCandidateVisible(candidate.element)) {
+      if (!isCandidateVisibleCached(candidate.element)) {
         return false;
       }
       evidence.add(`subscription:regex_${idx}`);
