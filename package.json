@@ -1,0 +1,22 @@
+{
+  "name": "trialguard",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TrialGuard browser extension",
+  "type": "module",
+  "scripts": {
+    "build": "node esbuild.config.mjs --mode=public",
+    "build:dev": "node esbuild.config.mjs --mode=dev",
+    "watch": "node esbuild.config.mjs --mode=dev --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.1.27",
+    "esbuild": "^0.27.0",
+    "jsdom": "^26.1.0",
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.8"
+  }
+}

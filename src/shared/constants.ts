@@ -1,0 +1,10 @@
+export const DETECTION_CONFIDENCE_THRESHOLD = 0.7;
+export const DETECTION_STORAGE_MAX = 50;
+export const INTERCEPT_IDLE_MS = 5 * 60 * 1000;
+export const NOTIFICATION_MAP_TTL_MS = 24 * 60 * 60 * 1000;
+export const MODAL_BUFFER_MIN = 0;
+export const MODAL_BUFFER_MAX = 7;
+export const SCAN_DEBOUNCE_MS = 500;
+export const SCAN_TEXT_CHAR_LIMIT = 30000;
+export const SCAN_MAX_SNIPPETS = 120;
+export const REMINDER_HOUR_LOCAL = 9;
