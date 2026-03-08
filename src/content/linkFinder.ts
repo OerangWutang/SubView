@@ -5,14 +5,20 @@ export type ManageCandidate = {
 };
 
 const KEYWORDS = ["manage", "cancel", "subscription", "billing", "account", "plan"];
+// Pre-compiled combined check mirrors the substring matching used in scoreText; intentionally
+// no word boundaries to stay consistent with the KEYWORDS.includes() calls below.
+const KEYWORDS_QUICK_CHECK = /manage|cancel|subscription|billing|account|plan/;
 
 function normalize(text: string): string {
   return text.toLowerCase().replace(/\s+/g, " ").trim();
 }
 
 function scoreText(text: string): number {
-  let score = 0;
   const normalized = normalize(text);
+  if (!KEYWORDS_QUICK_CHECK.test(normalized)) {
+    return 0;
+  }
+  let score = 0;
   for (const keyword of KEYWORDS) {
     if (normalized.includes(keyword)) {
       score += keyword === "cancel" || keyword === "manage" ? 3 : 2;

@@ -58,8 +58,7 @@ export function evaluateCheckoutContext(url: string, overrides?: KeywordOverride
   const commitTerms = getCommitTerms(overrides);
   const paymentTerms = BASE_PAYMENT_TERMS;
 
-  const inputCandidates = Array.from(document.querySelectorAll("input, textarea, select"));
-  for (const element of inputCandidates) {
+  for (const element of document.querySelectorAll("input, textarea, select")) {
     const parts = [
       element.getAttribute("name") ?? "",
       element.getAttribute("id") ?? "",
@@ -76,8 +75,7 @@ export function evaluateCheckoutContext(url: string, overrides?: KeywordOverride
     }
   }
 
-  const commitElements = Array.from(document.querySelectorAll("button, input[type='submit'], [role='button'], a"));
-  for (const element of commitElements) {
+  for (const element of document.querySelectorAll("button, input[type='submit'], [role='button'], a")) {
     const parts = [
       element.textContent ?? "",
       element.getAttribute("value") ?? "",
