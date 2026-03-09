@@ -42,6 +42,26 @@ describe("detectSubscriptionContext", () => {
     expect(detection?.trialDays).toBe(20);
   });
 
+  it("extracts teen number words for trial days", () => {
+    const cases: Array<{ text: string; days: number }> = [
+      { text: "Try free for thirteen days", days: 13 },
+      { text: "fifteen day free trial", days: 15 },
+      { text: "Get sixteen days free", days: 16 },
+      { text: "seventeen day trial period", days: 17 },
+      { text: "eighteen days free trial", days: 18 },
+      { text: "nineteen day free trial", days: 19 }
+    ];
+
+    for (const { text, days } of cases) {
+      const detection = detectSubscriptionContext({
+        candidates: [{ text }],
+        url: "https://example.com/trial",
+        contextLoader: () => ({ score: 0, evidence: [] })
+      });
+      expect(detection?.trialDays, `expected ${days} for "${text}"`).toBe(days);
+    }
+  });
+
   it("normalizes week and month trial lengths to day counts", () => {
     const weekDetection = detectSubscriptionContext({
       candidates: [{ text: "Get 2 weeks free trial" }],

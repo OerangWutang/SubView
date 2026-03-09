@@ -7,13 +7,6 @@ export type TextCandidate = {
   element?: Element | null;
 };
 
-const BASE_TRIAL_REGEX = [
-  /free\s+trial/i,
-  /(\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fourteen|twenty|thirty)\s*(day|days|week|weeks|month|months)\s*(free)?/i,
-  /start\s+trial/i,
-  /trial\s+ends?\s+on/i
-];
-
 const BASE_RENEWAL_REGEX = [
   /renew(s|al)?\s+(at|on)/i,
   /then\s+([$€£¥₹]|USD|CAD|AUD|GBP|EUR)\s*\d/i,
@@ -67,15 +60,31 @@ const NUMBER_WORDS: Record<string, number> = {
   ten: 10,
   eleven: 11,
   twelve: 12,
+  thirteen: 13,
   fourteen: 14,
+  fifteen: 15,
+  sixteen: 16,
+  seventeen: 17,
+  eighteen: 18,
+  nineteen: 19,
   twenty: 20,
   thirty: 30
 };
 
+const NUMBER_WORDS_PATTERN = Object.keys(NUMBER_WORDS).join("|");
+const DURATION_QUANTITY_PATTERN = `(?:\\d+|${NUMBER_WORDS_PATTERN})`;
+const DURATION_UNIT_PATTERN = `(?:day|days|week|weeks|month|months)`;
+const DURATION_REGEX = new RegExp(`(${DURATION_QUANTITY_PATTERN})\\s*(${DURATION_UNIT_PATTERN})`, "i");
+
+const BASE_TRIAL_REGEX = [
+  /free\s+trial/i,
+  new RegExp(`(${DURATION_QUANTITY_PATTERN})\\s*(${DURATION_UNIT_PATTERN})\\s*(free)?`, "i"),
+  /start\s+trial/i,
+  /trial\s+ends?\s+on/i
+];
+
 function extractTrialDays(text: string): { days: number; evidence?: string } | null {
-  const match = text.match(
-    /((?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fourteen|twenty|thirty))\s*(day|days|week|weeks|month|months)/i
-  );
+  const match = text.match(DURATION_REGEX);
   if (!match) {
     return null;
   }
@@ -101,7 +110,7 @@ function extractTrialDays(text: string): { days: number; evidence?: string } | n
 
 function extractPriceAfterTrial(text: string): string | undefined {
   const match = text.match(
-    /(?:then|renew(?:s|al)?(?:\s+at|\s+on)?|billed|charged)[^$€£¥₹\d]{0,20}((?:[$€£¥₹]|USD|CAD|AUD|GBP|EUR)\s?\d+(?:[.,]\d{1,2})?(?:\s*\/?\s*(?:month|year|week|mo|yr))?)/i
+    /(?:then|renew(?:s|al)?(?:\s+at|\s+on)?|billed|charged)[^$€£¥₹\d]{0,20}((?:[$€£¥₹]|USD|CAD|AUD|GBP|EUR)\s?\d+(?:[.,]\d{1,2})?(?:\s*(?:\/|per)\s*(?:month|year|week|mo|yr))?)/i
   );
   return match?.[1]?.replace(/\s+/g, " ").trim();
 }

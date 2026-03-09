@@ -1,5 +1,4 @@
 import type { ReminderRecord } from "../shared/types";
-import { toIcsLocalDateTime } from "../shared/time";
 
 function toIcsUtcDateTime(date: Date): string {
   const pad = (value: number) => String(value).padStart(2, "0");
@@ -36,8 +35,8 @@ export function generateIcsForReminder(reminder: ReminderRecord): string {
     "BEGIN:VEVENT",
     `UID:${escapeIcsValue(uid)}`,
     `DTSTAMP:${dtstamp}`,
-    `DTSTART:${toIcsLocalDateTime(reminderAt)}`,
-    `DTEND:${toIcsLocalDateTime(endAt)}`,
+    `DTSTART:${toIcsUtcDateTime(reminderAt)}`,
+    `DTEND:${toIcsUtcDateTime(endAt)}`,
     `SUMMARY:${summary}`,
     `DESCRIPTION:${escapeIcsValue(descriptionLines.join("\\n"))}`,
     reminder.manageUrl ? `URL:${escapeIcsValue(reminder.manageUrl)}` : "",

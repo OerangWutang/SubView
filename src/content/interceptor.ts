@@ -51,7 +51,9 @@ export class CommitInterceptor {
       return;
     }
 
-    if (!isLikelyCommitTarget(event.target, this.keywordOverrides)) {
+    // Prefer the submitter button for commit target detection; fall back to the form element.
+    const checkTarget = event.submitter ?? event.target;
+    if (!isLikelyCommitTarget(checkTarget, this.keywordOverrides)) {
       return;
     }
 

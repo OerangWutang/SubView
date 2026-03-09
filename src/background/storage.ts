@@ -198,17 +198,19 @@ export function findDuplicateReminder(
   nowMs: number
 ): ReminderRecord | null {
   const THIRTY_MIN_MS = 30 * 60 * 1000;
-  const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+
+  // Normalize cancelAt to UTC date bucket (YYYY-MM-DD) for a stable comparison
+  // that is unaffected by sub-day clock drift between detections.
+  const candidateCancelDay = candidate.cancelAt.slice(0, 10);
 
   for (const reminder of reminders) {
     const sameDomain = reminder.domainKey === candidate.domainKey;
     const sameKind = reminder.kind === candidate.kind;
     const sameTrialDays = (reminder.trialDays ?? null) === (candidate.trialDays ?? null);
-    const closeCancelAt =
-      Math.abs(new Date(reminder.cancelAt).getTime() - new Date(candidate.cancelAt).getTime()) <= TWENTY_FOUR_HOURS_MS;
+    const sameCancelDay = reminder.cancelAt.slice(0, 10) === candidateCancelDay;
     const recentCreation = nowMs - new Date(reminder.createdAt).getTime() <= THIRTY_MIN_MS;
 
-    if (sameDomain && sameKind && sameTrialDays && closeCancelAt && recentCreation) {
+    if (sameDomain && sameKind && sameTrialDays && sameCancelDay && recentCreation) {
       return reminder;
     }
   }
