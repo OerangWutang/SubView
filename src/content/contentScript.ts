@@ -152,7 +152,7 @@ async function run(): Promise<void> {
       sitePolicy,
       defaultBufferDays,
       callbacks: {
-        onAddReminder: async (bufferDays, manageUrl) => {
+        onAddReminder: async (bufferDays, manageUrl, pricePerCycle, billingCycle, renewalDate, tosRequiredDays) => {
           const result = await sendMessage<{ reminder: ReminderRecord; duplicateCandidateId?: string }>({
             type: "UPSERT_REMINDER",
             payload: {
@@ -161,7 +161,11 @@ async function run(): Promise<void> {
               domainKey,
               bufferDays,
               manageUrl,
-              dedupeAction: "keep-both"
+              dedupeAction: "keep-both",
+              pricePerCycle,
+              billingCycle,
+              renewalDate,
+              tosRequiredDays
             }
           });
 

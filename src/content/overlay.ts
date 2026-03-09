@@ -1,10 +1,17 @@
 import { MODAL_BUFFER_MAX, MODAL_BUFFER_MIN } from "../shared/constants";
-import type { DetectionResult, SitePolicy } from "../shared/types";
+import type { BillingCycle, DetectionResult, SitePolicy } from "../shared/types";
 import { addDays, clamp } from "../shared/utils";
 import type { ManageCandidate } from "./linkFinder";
 
 type ModalCallbacks = {
-  onAddReminder: (bufferDays: number, manageUrl?: string) => Promise<{ reminderId: string; duplicateCandidateId?: string }>;
+  onAddReminder: (
+    bufferDays: number,
+    manageUrl?: string,
+    pricePerCycle?: number,
+    billingCycle?: BillingCycle,
+    renewalDate?: string,
+    tosRequiredDays?: number
+  ) => Promise<{ reminderId: string; duplicateCandidateId?: string }>;
   onFindManageLinks: () => Promise<ManageCandidate[]>;
   onDisableSite: () => Promise<void>;
   onDismiss: (reason: "continue" | "dismiss" | "site-disabled") => void;
@@ -92,7 +99,18 @@ export class TrialGuardOverlay {
       .tg-list a { color: #0f766e; word-break: break-all; }
       .tg-steps { margin: 0; padding-left: 18px; }
       .tg-status { font-size: 12px; color: #065f46; }
+      .tg-tos-warning {
+        padding: 8px 10px;
+        border-radius: 8px;
+        font-size: 13px;
+        border: 1px solid #fbbf24;
+        background: #fffbeb;
+        color: #78350f;
+      }
+      .tg-deadline { font-size: 13px; color: #065f46; font-weight: 600; }
       input[type='number'] { width: 64px; padding: 4px 6px; }
+      input[type='date'] { padding: 4px 6px; }
+      select { padding: 4px 6px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; }
     `;
 
     this.hud = document.createElement("div");
@@ -187,7 +205,7 @@ export class TrialGuardOverlay {
     const bufferRow = document.createElement("div");
     bufferRow.className = "tg-row";
     const bufferLabel = document.createElement("label");
-    bufferLabel.textContent = "Buffer days";
+    bufferLabel.textContent = "Remind me (days before)";
     bufferLabel.htmlFor = "tg-buffer";
     const bufferInput = document.createElement("input");
     bufferInput.id = "tg-buffer";
@@ -196,6 +214,68 @@ export class TrialGuardOverlay {
     bufferInput.max = String(MODAL_BUFFER_MAX);
     bufferInput.value = String(clamp(params.defaultBufferDays, MODAL_BUFFER_MIN, MODAL_BUFFER_MAX));
     bufferRow.append(bufferLabel, bufferInput);
+
+    // Renewal date row
+    const renewalRow = document.createElement("div");
+    renewalRow.className = "tg-row";
+    const renewalLabel = document.createElement("label");
+    renewalLabel.textContent = "Renewal date (optional)";
+    renewalLabel.htmlFor = "tg-renewal-date";
+    const renewalDateInput = document.createElement("input");
+    renewalDateInput.id = "tg-renewal-date";
+    renewalDateInput.type = "date";
+    renewalRow.append(renewalLabel, renewalDateInput);
+
+    // Price + billing cycle row
+    const priceRow = document.createElement("div");
+    priceRow.className = "tg-row";
+    const priceLabel = document.createElement("label");
+    priceLabel.textContent = "Cost (optional)";
+    priceLabel.htmlFor = "tg-price";
+    const priceInput = document.createElement("input");
+    priceInput.id = "tg-price";
+    priceInput.type = "number";
+    priceInput.min = "0";
+    priceInput.step = "0.01";
+    priceInput.placeholder = "0.00";
+    priceInput.style.width = "80px";
+    const cycleSelect = document.createElement("select");
+    cycleSelect.id = "tg-billing-cycle";
+    const cycleOptions: Array<{ value: string; label: string }> = [
+      { value: "monthly", label: "/ month" },
+      { value: "yearly", label: "/ year" },
+      { value: "weekly", label: "/ week" },
+      { value: "custom", label: "custom" }
+    ];
+    for (const opt of cycleOptions) {
+      const option = document.createElement("option");
+      option.value = opt.value;
+      option.textContent = opt.label;
+      cycleSelect.appendChild(option);
+    }
+    priceRow.append(priceLabel, priceInput, cycleSelect);
+
+    // ToS required days row
+    const tosRow = document.createElement("div");
+    tosRow.className = "tg-row";
+    const tosLabel = document.createElement("label");
+    tosLabel.textContent = "Days notice required by Terms of Service";
+    tosLabel.htmlFor = "tg-tos-days";
+    const tosInput = document.createElement("input");
+    tosInput.id = "tg-tos-days";
+    tosInput.type = "number";
+    tosInput.min = "0";
+    tosInput.style.width = "64px";
+    tosInput.placeholder = "0";
+    if (policy?.tosRequiredDays) {
+      tosInput.value = String(policy.tosRequiredDays);
+    }
+    tosRow.append(tosLabel, tosInput);
+
+    // ToS deadline display
+    const tosDeadlineDisplay = document.createElement("div");
+    tosDeadlineDisplay.className = "tg-tos-warning";
+    tosDeadlineDisplay.style.display = "none";
 
     const policyWarning = document.createElement("div");
     if (policy && (policy.difficulty === "hard" || policy.difficulty === "medium")) {
@@ -261,19 +341,52 @@ export class TrialGuardOverlay {
 
     const updateReminderDateText = () => {
       const bufferDays = clamp(Number(bufferInput.value), MODAL_BUFFER_MIN, MODAL_BUFFER_MAX);
-      const daysUntilCancel = Math.max(0, trialDays - bufferDays);
-      const date = addDays(new Date(), daysUntilCancel);
+      const renewalVal = renewalDateInput.value;
+      let date: Date;
+
+      if (renewalVal) {
+        date = addDays(new Date(renewalVal), -bufferDays);
+      } else {
+        const daysUntilCancel = Math.max(0, trialDays - bufferDays);
+        date = addDays(new Date(), daysUntilCancel);
+      }
       date.setHours(9, 0, 0, 0);
-      dateText.textContent = `Suggested cancel reminder date: ${date.toLocaleString()}`;
+      dateText.textContent = `Suggested cancel reminder: ${date.toLocaleDateString()}`;
+
+      // Update ToS deadline display
+      const tosRequiredDays = Number(tosInput.value);
+      if (renewalVal && tosRequiredDays > 0) {
+        const tosDeadline = addDays(new Date(renewalVal), -tosRequiredDays);
+        tosDeadlineDisplay.style.display = "block";
+        tosDeadlineDisplay.textContent = `⚠️ Terms of Service require ${tosRequiredDays} day(s) advance notice before renewal. Last safe cancellation date: ${tosDeadline.toLocaleDateString()}`;
+      } else {
+        tosDeadlineDisplay.style.display = "none";
+      }
     };
 
     updateReminderDateText();
 
     bufferInput.addEventListener("change", updateReminderDateText);
+    renewalDateInput.addEventListener("change", updateReminderDateText);
+    tosInput.addEventListener("change", updateReminderDateText);
 
     addReminderButton.addEventListener("click", async () => {
       const bufferDays = clamp(Number(bufferInput.value), MODAL_BUFFER_MIN, MODAL_BUFFER_MAX);
-      const result = await params.callbacks.onAddReminder(bufferDays, selectedManageUrl);
+      const priceVal = priceInput.value.trim();
+      const pricePerCycle = priceVal !== "" ? parseFloat(priceVal) : undefined;
+      const billingCycle = cycleSelect.value as BillingCycle | undefined;
+      const renewalDate = renewalDateInput.value || undefined;
+      const tosRequiredDaysVal = Number(tosInput.value);
+      const tosRequiredDays = tosRequiredDaysVal > 0 ? tosRequiredDaysVal : undefined;
+
+      const result = await params.callbacks.onAddReminder(
+        bufferDays,
+        selectedManageUrl,
+        pricePerCycle,
+        billingCycle,
+        renewalDate,
+        tosRequiredDays
+      );
       createdReminderId = result.reminderId;
       exportIcsButton.disabled = false;
       status.textContent = result.duplicateCandidateId
@@ -359,7 +472,7 @@ export class TrialGuardOverlay {
 
     this.modalRoot.onkeydown = onKeydown;
 
-    body.append(summary, dateText, bufferRow);
+    body.append(summary, dateText, bufferRow, renewalRow, priceRow, tosRow, tosDeadlineDisplay);
     if (policyWarning.className) {
       body.append(policyWarning);
     }

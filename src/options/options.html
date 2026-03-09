@@ -36,8 +36,8 @@
     <label><input id="enabled" type="checkbox" /> Enable detection</label>
     <label><input id="requestOnStartup" type="checkbox" /> Prompt for all-sites permission on startup</label>
     <label><input id="debugOverlay" type="checkbox" /> Enable debug overlay</label>
-    <label for="bufferDays">Default buffer days (0-7)</label>
-    <input id="bufferDays" type="number" min="0" max="7" />
+    <label for="bufferDays">Default buffer days (0-30)</label>
+    <input id="bufferDays" type="number" min="0" max="30" />
   </section>
 
   <section>
@@ -85,6 +85,8 @@
     <textarea id="policySteps"></textarea>
     <label for="policyManageUrl">Manage URL</label>
     <input id="policyManageUrl" type="text" placeholder="https://..." />
+    <label for="policyTosRequiredDays">ToS cancellation notice (days before renewal, 0 = none)</label>
+    <input id="policyTosRequiredDays" type="number" min="0" placeholder="0" />
     <div class="row"><button id="savePolicy" type="button">Save policy override</button></div>
   </section>
 

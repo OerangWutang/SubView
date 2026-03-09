@@ -173,13 +173,16 @@ async function init(): Promise<void> {
       .map((line) => line.trim())
       .filter(Boolean);
     const manageUrl = (document.getElementById("policyManageUrl") as HTMLInputElement).value.trim();
+    const tosRequiredDaysRaw = Number((document.getElementById("policyTosRequiredDays") as HTMLInputElement).value);
+    const tosRequiredDays = tosRequiredDaysRaw > 0 ? tosRequiredDaysRaw : undefined;
 
     const policy: SitePolicy = {
       difficulty,
       method,
       notes: notes || undefined,
       steps: steps.length > 0 ? steps : undefined,
-      manageUrl: manageUrl || undefined
+      manageUrl: manageUrl || undefined,
+      tosRequiredDays
     };
 
     await sendMessage({

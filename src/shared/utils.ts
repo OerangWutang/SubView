@@ -19,3 +19,23 @@ export function addDays(base: Date, days: number): Date {
 export function parseCsv(value: string): string[] {
   return uniqueStrings(value.split(",").map((item) => item.trim().toLowerCase()));
 }
+
+export function daysUntilDate(isoDate: string): number {
+  const now = new Date();
+  const target = new Date(isoDate);
+  const msPerDay = 24 * 60 * 60 * 1000;
+  return Math.ceil((target.getTime() - now.getTime()) / msPerDay);
+}
+
+export function computeMonthlyEquivalentCost(pricePerCycle: number, billingCycle: string): number | null {
+  switch (billingCycle) {
+    case "weekly":
+      return (pricePerCycle * 52) / 12;
+    case "monthly":
+      return pricePerCycle;
+    case "yearly":
+      return pricePerCycle / 12;
+    default:
+      return null;
+  }
+}
