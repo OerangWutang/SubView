@@ -114,7 +114,7 @@ function textFromElement(element: Element): string {
 
 function formHasPaymentHints(form: HTMLFormElement): boolean {
   const fields = form.querySelectorAll("input, select, textarea");
-  for (const field of fields) {
+  for (const field of Array.from(fields)) {
     const text = textFromElement(field);
     if (includesAny(text, BASE_PAYMENT_TERMS) || /cc-number|cardnumber|cc-csc|cc-exp/i.test(text)) {
       return true;

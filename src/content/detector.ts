@@ -4,7 +4,7 @@ import type { CheckoutContextResult } from "./contextHeuristics";
 
 export type TextCandidate = {
   text: string;
-  element?: Element | null;
+  element?: WeakRef<Element> | null;
 };
 
 const BASE_TRIAL_REGEX = [
@@ -17,7 +17,7 @@ const BASE_TRIAL_REGEX = [
 const BASE_RENEWAL_REGEX = [
   /renew(s|al)?\s+(at|on)/i,
   /then\s+([$€£¥₹]|USD|CAD|AUD|GBP|EUR)\s*\d/i,
-  /(billed|charged)\s+(monthly|annually|per\s+month|per\s+year)/i
+  /(billed|charged)\s+(monthly|annually|yearly|weekly|per\s+month|per\s+year|per\s+week)/i
 ];
 
 const BASE_SUBSCRIPTION_REGEX = [
@@ -33,17 +33,18 @@ function keywordRegexes(values: string[]): RegExp[] {
   return values.filter(Boolean).map((value) => new RegExp(escapeRegex(value), "i"));
 }
 
-function isCandidateVisible(element?: Element | null): boolean {
-  if (!element) {
+function isCandidateVisible(element?: WeakRef<Element> | null): boolean {
+  const el = element?.deref();
+  if (!el) {
     return true;
   }
 
-  if (element.getClientRects().length === 0) {
+  if (el.getClientRects().length === 0) {
     return false;
   }
 
-  const style = window.getComputedStyle(element);
-  if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") {
+  const style = window.getComputedStyle(el);
+  if (style.display === "none" || style.visibility === "hidden" || parseFloat(style.opacity) === 0) {
     return false;
   }
 
@@ -101,13 +102,13 @@ function extractTrialDays(text: string): { days: number; evidence?: string } | n
 
 function extractPriceAfterTrial(text: string): string | undefined {
   const match = text.match(
-    /(?:then|renew(?:s|al)?(?:\s+at|\s+on)?|billed|charged)[^$€£¥₹\d]{0,20}((?:[$€£¥₹]|USD|CAD|AUD|GBP|EUR)\s?\d+(?:[.,]\d{1,2})?(?:\s*\/?\s*(?:month|year|week|mo|yr))?)/i
+    /(?:then|renew(?:s|al)?(?:\s+at|\s+on)?|billed|charged)[^$€£¥₹\d]{0,20}((?:[$€£¥₹]|USD|CAD|AUD|GBP|EUR)\s?\d+(?:[.,]\d{1,2})?(?:\s*(?:per\s+|\/\s*)?(?:month|year|week|mo|yr))?)/i
   );
   return match?.[1]?.replace(/\s+/g, " ").trim();
 }
 
 function extractRenewalPeriod(text: string): string | undefined {
-  const match = text.match(/(monthly|annually|per\s+month|per\s+year|per\s+week)/i);
+  const match = text.match(/(monthly|annually|yearly|weekly|per\s+month|per\s+year|per\s+week)/i);
   if (!match) {
     return undefined;
   }

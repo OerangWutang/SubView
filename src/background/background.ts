@@ -32,7 +32,7 @@ import { getDomainKey, getHostname } from "../shared/domain";
 import { uid } from "../shared/utils";
 
 type RegisteredScript = chrome.scripting.RegisteredContentScript;
-const DYNAMIC_CONTENT_SCRIPT_ID = "trialguard-content";
+const DYNAMIC_CONTENT_SCRIPT_ID = "subview-content";
 
 function getRegisteredContentScripts(ids?: string[]): Promise<RegisteredScript[]> {
   return new Promise((resolve) => {
@@ -117,7 +117,7 @@ async function ensureContentScriptRegistration(): Promise<void> {
         try {
           await executeContentScript(tab.id);
         } catch (error) {
-          console.debug(`[TrialGuard] Could not inject into tab ${tab.id}`, error);
+          console.debug(`[SubView] Could not inject into tab ${tab.id}`, error);
         }
       }
     }

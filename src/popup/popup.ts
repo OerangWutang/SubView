@@ -81,5 +81,5 @@ async function init(): Promise<void> {
 }
 
 void init().catch((error) => {
-  console.error("TrialGuard popup failed", error);
+  console.error("SubView popup failed", error);
 });

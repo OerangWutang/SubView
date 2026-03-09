@@ -16,7 +16,7 @@ import { detectSubscriptionContext, type TextCandidate } from "./detector";
 import { CommitInterceptor } from "./interceptor";
 import { findManageCandidates, buildHelpSearchUrl, type ManageCandidate } from "./linkFinder";
 import { IncrementalTextObserver } from "./observer";
-import { TrialGuardOverlay } from "./overlay";
+import { SubViewOverlay } from "./overlay";
 
 async function run(): Promise<void> {
   const hostname = getHostname(location.href);
@@ -31,7 +31,7 @@ async function run(): Promise<void> {
   });
 
   let settings: UserSettings = runtimeState.settings;
-  const overlay = new TrialGuardOverlay();
+  const overlay = new SubViewOverlay();
   overlay.setDebugEnabled(settings.debugOverlay);
 
   if (!runtimeState.hostAllowedForCurrentOrigin) {
@@ -203,7 +203,7 @@ async function run(): Promise<void> {
           if (reason === "continue") {
             const resumed = interceptor.continueBlockedFormSubmission();
             if (!resumed) {
-              alert("TrialGuard: Could not automatically resume checkout. Please click the checkout button again.");
+              alert("SubView: Could not automatically resume checkout. Please click the checkout button again.");
             }
           } else {
             interceptor.clearBlockedFormSubmission();
@@ -227,5 +227,5 @@ async function run(): Promise<void> {
 
 void run().catch((error) => {
   // Fail silently in-page to avoid checkout disruption.
-  console.error("TrialGuard content script failed", error);
+  console.error("SubView content script failed", error);
 });
