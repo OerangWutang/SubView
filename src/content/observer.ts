@@ -30,7 +30,7 @@ function collectTextCandidatesFromNode(node: Node, budget: { chars: number; snip
   }
 
   const walker = document.createTreeWalker(walkerRoot, NodeFilter.SHOW_TEXT);
-  let current = walker.currentNode;
+  let current: Node | null = walker.currentNode;
 
   while (current) {
     if (budget.snippets >= SCAN_MAX_SNIPPETS || budget.chars >= SCAN_TEXT_CHAR_LIMIT) {
