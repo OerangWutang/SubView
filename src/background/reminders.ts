@@ -63,7 +63,9 @@ function coerceBufferDays(bufferDays: number): number {
 function computeCancelDate(now: Date, detection: DetectionResult, bufferDays: number, renewalDate?: string): Date {
   if (renewalDate) {
     const renewal = new Date(renewalDate);
-    return addDays(renewal, -bufferDays);
+    if (!isNaN(renewal.getTime())) {
+      return addDays(renewal, -bufferDays);
+    }
   }
   const baselineDays = detection.trialDays ?? 30;
   return addDays(now, Math.max(0, baselineDays - bufferDays));

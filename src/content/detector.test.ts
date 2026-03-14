@@ -58,4 +58,28 @@ describe("detectSubscriptionContext", () => {
     expect(weekDetection?.trialDays).toBe(14);
     expect(monthDetection?.trialDays).toBe(60);
   });
+
+  it("uses trial:regex_ prefix for base pattern matches", () => {
+    const detection = detectSubscriptionContext({
+      candidates: [{ text: "Start your free trial today" }],
+      url: "https://example.com/trial",
+      contextLoader: () => ({ score: 0, evidence: [] })
+    });
+
+    expect(detection).not.toBeNull();
+    expect(detection?.evidence.some((e) => e.startsWith("trial:regex_"))).toBe(true);
+    expect(detection?.evidence.some((e) => e.startsWith("trial:custom_"))).toBe(false);
+  });
+
+  it("uses trial:custom_ prefix for custom keyword matches and trial:regex_ for base matches", () => {
+    const detectionCustomOnly = detectSubscriptionContext({
+      candidates: [{ text: "Try membership for free" }],
+      url: "https://example.com/trial",
+      contextLoader: () => ({ score: 0, evidence: [] }),
+      overrides: { trial: ["membership for free"], renewal: [], subscription: [], commit: [] }
+    });
+
+    expect(detectionCustomOnly).not.toBeNull();
+    expect(detectionCustomOnly?.evidence.some((e) => e.startsWith("trial:custom_"))).toBe(true);
+  });
 });

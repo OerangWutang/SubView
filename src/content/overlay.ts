@@ -62,6 +62,8 @@ export class SubViewOverlay {
       }
       .tg-modal {
         width: min(520px, 94vw);
+        max-height: calc(100vh - 28px);
+        overflow-y: auto;
         background: #ffffff;
         color: #111827;
         border-radius: 12px;
@@ -366,32 +368,46 @@ export class SubViewOverlay {
 
     updateReminderDateText();
 
+    bufferInput.addEventListener("input", updateReminderDateText);
     bufferInput.addEventListener("change", updateReminderDateText);
     renewalDateInput.addEventListener("change", updateReminderDateText);
+    tosInput.addEventListener("input", updateReminderDateText);
     tosInput.addEventListener("change", updateReminderDateText);
 
     addReminderButton.addEventListener("click", async () => {
-      const bufferDays = clamp(Number(bufferInput.value), MODAL_BUFFER_MIN, MODAL_BUFFER_MAX);
-      const priceVal = priceInput.value.trim();
-      const pricePerCycle = priceVal !== "" ? parseFloat(priceVal) : undefined;
-      const billingCycle = cycleSelect.value as BillingCycle | undefined;
-      const renewalDate = renewalDateInput.value || undefined;
-      const tosRequiredDaysVal = Number(tosInput.value);
-      const tosRequiredDays = tosRequiredDaysVal > 0 ? tosRequiredDaysVal : undefined;
+      addReminderButton.disabled = true;
+      try {
+        const bufferDays = clamp(Number(bufferInput.value), MODAL_BUFFER_MIN, MODAL_BUFFER_MAX);
+        const priceVal = priceInput.value.trim();
+        const pricePerCycle = priceVal !== "" ? parseFloat(priceVal) : undefined;
+        const VALID_BILLING_CYCLES: BillingCycle[] = ["weekly", "monthly", "yearly", "custom"];
+        const rawCycle = cycleSelect.value;
+        const billingCycle =
+          pricePerCycle !== undefined && VALID_BILLING_CYCLES.includes(rawCycle as BillingCycle)
+            ? (rawCycle as BillingCycle)
+            : undefined;
+        const renewalDate = renewalDateInput.value || undefined;
+        const tosRequiredDaysVal = Number(tosInput.value);
+        const tosRequiredDays = tosRequiredDaysVal > 0 ? tosRequiredDaysVal : undefined;
 
-      const result = await params.callbacks.onAddReminder(
-        bufferDays,
-        selectedManageUrl,
-        pricePerCycle,
-        billingCycle,
-        renewalDate,
-        tosRequiredDays
-      );
-      createdReminderId = result.reminderId;
-      exportIcsButton.disabled = false;
-      status.textContent = result.duplicateCandidateId
-        ? "Reminder saved. Similar reminder detected and linked."
-        : "Reminder saved.";
+        const result = await params.callbacks.onAddReminder(
+          bufferDays,
+          selectedManageUrl,
+          pricePerCycle,
+          billingCycle,
+          renewalDate,
+          tosRequiredDays
+        );
+        createdReminderId = result.reminderId;
+        exportIcsButton.disabled = false;
+        status.textContent = result.duplicateCandidateId
+          ? "Reminder saved. Similar reminder detected and linked."
+          : "Reminder saved.";
+      } catch (err) {
+        console.error("[SubView] Failed to save reminder", err);
+        status.textContent = "Failed to save reminder. Please try again.";
+        addReminderButton.disabled = false;
+      }
     });
 
     findLinksButton.addEventListener("click", async () => {

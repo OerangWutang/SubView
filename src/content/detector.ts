@@ -142,6 +142,10 @@ export function detectSubscriptionContext(args: {
   const renewalRegexes = [...BASE_RENEWAL_REGEX, ...keywordRegexes(args.overrides?.renewal ?? [])];
   const subscriptionRegexes = [...BASE_SUBSCRIPTION_REGEX, ...keywordRegexes(args.overrides?.subscription ?? [])];
 
+  const baseTrialCount = BASE_TRIAL_REGEX.length;
+  const baseRenewalCount = BASE_RENEWAL_REGEX.length;
+  const baseSubscriptionCount = BASE_SUBSCRIPTION_REGEX.length;
+
   const evidence = new Set<string>();
   let trialDays: number | undefined;
   let priceAfterTrial: string | undefined;
@@ -168,7 +172,7 @@ export function detectSubscriptionContext(args: {
       if (!isCandidateVisible(candidate.element)) {
         return false;
       }
-      evidence.add(`trial:regex_${idx}`);
+      evidence.add(idx < baseTrialCount ? `trial:regex_${idx}` : `trial:custom_${idx - baseTrialCount}`);
       return true;
     });
 
@@ -179,7 +183,7 @@ export function detectSubscriptionContext(args: {
       if (!isCandidateVisible(candidate.element)) {
         return false;
       }
-      evidence.add(`renewal:regex_${idx}`);
+      evidence.add(idx < baseRenewalCount ? `renewal:regex_${idx}` : `renewal:custom_${idx - baseRenewalCount}`);
       return true;
     });
 
@@ -190,7 +194,7 @@ export function detectSubscriptionContext(args: {
       if (!isCandidateVisible(candidate.element)) {
         return false;
       }
-      evidence.add(`subscription:regex_${idx}`);
+      evidence.add(idx < baseSubscriptionCount ? `subscription:regex_${idx}` : `subscription:custom_${idx - baseSubscriptionCount}`);
       return true;
     });
 

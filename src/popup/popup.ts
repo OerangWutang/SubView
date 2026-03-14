@@ -38,11 +38,19 @@ function renderReminders(items: ReminderRecord[]): void {
     // Days until renewal
     if (item.renewalDate) {
       const daysLeft = daysUntilDate(item.renewalDate);
-      details.push(daysLeft > 0 ? `Renews in ${daysLeft}d` : "Renewal past due");
+      if (daysLeft > 0) {
+        details.push(`Renews in ${daysLeft}d`);
+      } else if (daysLeft === 0) {
+        details.push("Renews today");
+      } else {
+        details.push("Renewal past due");
+      }
     } else {
       const daysLeft = daysUntilDate(item.cancelAt);
       if (daysLeft > 0) {
         details.push(`~${daysLeft}d remaining`);
+      } else if (daysLeft === 0) {
+        details.push("Due today");
       }
     }
 

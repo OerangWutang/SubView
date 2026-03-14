@@ -74,9 +74,9 @@ export class IncrementalTextObserver {
           this.queue.add(mutation.target);
         }
 
-        mutation.addedNodes.forEach((node) => {
+        for (const node of Array.from(mutation.addedNodes)) {
           this.queue.add(node);
-        });
+        }
       }
       this.schedule();
     });
