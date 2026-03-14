@@ -1310,4 +1310,3 @@
     console.error("TrialGuard content script failed", error);
   });
 })();
-//# sourceMappingURL=contentScript.js.map

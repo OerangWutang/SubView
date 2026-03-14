@@ -981,4 +981,3 @@
     return { hostname, domainKey };
   }
 })();
-//# sourceMappingURL=background.js.map

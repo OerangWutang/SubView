@@ -83,4 +83,3 @@
     console.error("TrialGuard popup failed", error);
   });
 })();
-//# sourceMappingURL=popup.js.map

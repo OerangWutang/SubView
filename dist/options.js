@@ -343,4 +343,3 @@
     setStatus(`Error: ${error instanceof Error ? error.message : String(error)}`);
   });
 })();
-//# sourceMappingURL=options.js.map
