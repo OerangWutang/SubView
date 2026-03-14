@@ -10,7 +10,7 @@ import {
   setReminders
 } from "./storage";
 
-const ALARM_PREFIX = "trialguard:reminder:";
+const ALARM_PREFIX = "subview:reminder:";
 
 export function alarmNameForReminder(reminderId: string): string {
   return `${ALARM_PREFIX}${reminderId}`;
@@ -150,7 +150,7 @@ export async function handleReminderAlarm(alarmName: string): Promise<void> {
     return;
   }
 
-  const notificationId = `trialguard:notice:${reminder.id}:${Date.now()}`;
+  const notificationId = `subview:notice:${reminder.id}:${Date.now()}`;
   const options: chrome.notifications.NotificationCreateOptions = {
     type: "basic",
     iconUrl: "icons/icon128.png",

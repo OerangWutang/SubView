@@ -11,7 +11,7 @@ type ModalCallbacks = {
   onExportIcs: (reminderId: string) => Promise<void>;
 };
 
-export class TrialGuardOverlay {
+export class SubViewOverlay {
   private readonly host: HTMLDivElement;
   private readonly shadow: ShadowRoot;
   private readonly hud: HTMLDivElement;
@@ -23,7 +23,7 @@ export class TrialGuardOverlay {
 
   constructor() {
     this.host = document.createElement("div");
-    this.host.id = "trialguard-root";
+    this.host.id = "subview-root";
     this.shadow = this.host.attachShadow({ mode: "open" });
 
     this.styleEl = document.createElement("style");
@@ -111,14 +111,14 @@ export class TrialGuardOverlay {
 
   updateDebugHud(detection: DetectionResult | null, note?: string): void {
     if (!detection) {
-      this.hud.textContent = note ? `TrialGuard: ${note}` : "TrialGuard: no detection";
+      this.hud.textContent = note ? `SubView: ${note}` : "SubView: no detection";
       return;
     }
 
     this.hud.textContent = "";
 
     const title = document.createElement("strong");
-    title.textContent = "TrialGuard";
+    title.textContent = "SubView";
     this.hud.appendChild(title);
 
     const lines = [

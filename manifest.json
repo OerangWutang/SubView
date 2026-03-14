@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "TrialGuard",
+  "name": "SubView",
   "version": "0.1.0",
   "description": "Pre-transaction trial and subscription detection with privacy-first reminders.",
   "permissions": ["storage", "alarms", "notifications", "downloads", "tabs", "scripting"],
@@ -16,7 +16,7 @@
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "TrialGuard"
+    "default_title": "SubView"
   },
   "options_page": "options.html"
 }

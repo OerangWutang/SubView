@@ -20,7 +20,7 @@ export function generateIcsForReminder(reminder: ReminderRecord): string {
   const reminderAt = new Date(reminder.reminderAt);
   const endAt = new Date(reminderAt.getTime() + 30 * 60 * 1000);
   const dtstamp = toIcsUtcDateTime(new Date());
-  const uid = `${reminder.id}@trialguard.local`;
+  const uid = `${reminder.id}@subview.local`;
   const summary = escapeIcsValue(`Cancel trial for ${reminder.domainKey}`);
 
   const descriptionLines = [
@@ -32,7 +32,7 @@ export function generateIcsForReminder(reminder: ReminderRecord): string {
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//TrialGuard//EN",
+    "PRODID:-//SubView//EN",
     "BEGIN:VEVENT",
     `UID:${escapeIcsValue(uid)}`,
     `DTSTAMP:${dtstamp}`,
@@ -63,7 +63,7 @@ function downloadFile(url: string, filename: string): Promise<void> {
 export async function exportReminderAsIcs(reminder: ReminderRecord): Promise<void> {
   const content = generateIcsForReminder(reminder);
   const safeDomain = reminder.domainKey.replace(/[^a-z0-9.-]/gi, "_") || "site";
-  const filename = `trialguard-cancel-${safeDomain}.ics`;
+  const filename = `subview-cancel-${safeDomain}.ics`;
   const url = `data:text/calendar;charset=utf-8,${encodeURIComponent(content)}`;
   await downloadFile(url, filename);
 }

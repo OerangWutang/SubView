@@ -4,7 +4,7 @@ import type { CheckoutContextResult } from "./contextHeuristics";
 
 export type TextCandidate = {
   text: string;
-  element?: Element | null;
+  element?: WeakRef<Element> | null;
 };
 
 const BASE_TRIAL_REGEX = [
@@ -17,7 +17,7 @@ const BASE_TRIAL_REGEX = [
 const BASE_RENEWAL_REGEX = [
   /renew(s|al)?\s+(at|on)/i,
   /then\s+([$€£¥₹]|USD|CAD|AUD|GBP|EUR)\s*\d/i,
-  /(billed|charged)\s+(monthly|annually|per\s+month|per\s+year)/i
+  /(billed|charged)\s+(monthly|annually|yearly|weekly|per\s+month|per\s+year|per\s+week)/i
 ];
 
 const BASE_SUBSCRIPTION_REGEX = [
@@ -33,7 +33,12 @@ function keywordRegexes(values: string[]): RegExp[] {
   return values.filter(Boolean).map((value) => new RegExp(escapeRegex(value), "i"));
 }
 
-function isCandidateVisible(element?: Element | null): boolean {
+function isCandidateVisible(elementRef?: WeakRef<Element> | null): boolean {
+  if (!elementRef) {
+    return true;
+  }
+
+  const element = elementRef.deref();
   if (!element) {
     return true;
   }
@@ -43,7 +48,7 @@ function isCandidateVisible(element?: Element | null): boolean {
   }
 
   const style = window.getComputedStyle(element);
-  if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") {
+  if (style.display === "none" || style.visibility === "hidden" || parseFloat(style.opacity) === 0) {
     return false;
   }
 
@@ -107,7 +112,7 @@ function extractPriceAfterTrial(text: string): string | undefined {
 }
 
 function extractRenewalPeriod(text: string): string | undefined {
-  const match = text.match(/(monthly|annually|per\s+month|per\s+year|per\s+week)/i);
+  const match = text.match(/(monthly|annually|yearly|weekly|per\s+month|per\s+year|per\s+week)/i);
   if (!match) {
     return undefined;
   }

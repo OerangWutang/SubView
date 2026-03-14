@@ -45,7 +45,7 @@ function collectTextCandidatesFromNode(node: Node, budget: { chars: number; snip
           const clipped = text.slice(0, 300);
           budget.snippets += 1;
           budget.chars += clipped.length;
-          output.push({ text: clipped, element: parent });
+          output.push({ text: clipped, element: new WeakRef(parent) });
         }
       }
     }
@@ -160,7 +160,7 @@ export class IncrementalTextObserver {
 
     if (elapsed > 40) {
       console.debug(
-        `[TrialGuard] Heavy DOM scan: ${elapsed.toFixed(1)}ms for ${candidates.length} snippets (roots: ${rootNodes.size})`
+        `[SubView] Heavy DOM scan: ${elapsed.toFixed(1)}ms for ${candidates.length} snippets (roots: ${rootNodes.size})`
       );
     }
 

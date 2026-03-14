@@ -1,8 +1,8 @@
 {
-  "name": "trialguard",
+  "name": "subview",
   "version": "0.1.0",
   "private": true,
-  "description": "TrialGuard browser extension",
+  "description": "SubView browser extension",
   "type": "module",
   "scripts": {
     "build": "node esbuild.config.mjs --mode=public",
