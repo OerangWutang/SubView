@@ -11,16 +11,22 @@ import {
 } from "./storage";
 
 const ALARM_PREFIX = "subview:reminder:";
+const LEGACY_ALARM_PREFIXES: string[] = ["reminder:"];
 
 export function alarmNameForReminder(reminderId: string): string {
   return `${ALARM_PREFIX}${reminderId}`;
 }
 
 function reminderIdFromAlarm(alarmName: string): string | null {
-  if (!alarmName.startsWith(ALARM_PREFIX)) {
-    return null;
+  const prefixesToCheck = [ALARM_PREFIX, ...LEGACY_ALARM_PREFIXES];
+
+  for (const prefix of prefixesToCheck) {
+    if (alarmName.startsWith(prefix)) {
+      return alarmName.slice(prefix.length);
+    }
   }
-  return alarmName.slice(ALARM_PREFIX.length);
+
+  return null;
 }
 
 function createNotification(
