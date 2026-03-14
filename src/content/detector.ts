@@ -17,7 +17,8 @@ const BASE_TRIAL_REGEX = [
 const BASE_RENEWAL_REGEX = [
   /renew(s|al)?\s+(at|on)/i,
   /then\s+([$€£¥₹]|USD|CAD|AUD|GBP|EUR)\s*\d/i,
-  /(billed|charged)\s+(monthly|annually|per\s+month|per\s+year)/i
+  /(billed|charged)\s+(monthly|annually|per\s+month|per\s+year)/i,
+  /(billed|charged)\s+([$€£¥₹]|USD|CAD|AUD|GBP|EUR)\s*\d/i
 ];
 
 const BASE_SUBSCRIPTION_REGEX = [
@@ -100,22 +101,9 @@ function extractTrialDays(text: string): { days: number; evidence?: string } | n
 }
 
 function extractPriceAfterTrial(text: string): string | undefined {
-  // Primary pattern: common trial/renewal prefixes followed by a price and optional period.
-  let match = text.match(
+  const match = text.match(
     /(?:then|renew(?:s|al)?(?:\s+at|\s+on)?|billed|charged)[^$€£¥₹\d]{0,20}((?:[$€£¥₹]|USD|CAD|AUD|GBP|EUR)\s?\d+(?:[.,]\d{1,2})?(?:\s*(?:per\s+)?\/?\s*(?:month|year|week|mo|yr))?)/i
   );
-
-  if (!match?.[1]) {
-    // Fallback: handle "billed|charged <currency><amount> ..." even when the surrounding
-    // text doesn't match the stricter renewal patterns that may gate this extraction.
-    match = text.match(
-      /(billed|charged)[^$€£¥₹\d]{0,20}((?:[$€£¥₹]|USD|CAD|AUD|GBP|EUR)\s?\d+(?:[.,]\d{1,2})?(?:[^A-Za-z0-9]{0,10}(?:per\s+)?\/?\s*(?:month|year|week|mo|yr))?)/i
-    );
-    if (match?.[2]) {
-      return match[2].replace(/\s+/g, " ").trim();
-    }
-  }
-
   return match?.[1]?.replace(/\s+/g, " ").trim();
 }
 

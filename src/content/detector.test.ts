@@ -58,4 +58,21 @@ describe("detectSubscriptionContext", () => {
     expect(weekDetection?.trialDays).toBe(14);
     expect(monthDetection?.trialDays).toBe(60);
   });
+
+  it("extracts price for 'billed|charged <currency><amount>' renewal phrases", () => {
+    const billedDetection = detectSubscriptionContext({
+      candidates: [{ text: "billed $12.99 per month after trial" }],
+      url: "https://example.com/checkout",
+      contextLoader: () => ({ score: 0, evidence: [] })
+    });
+
+    const chargedDetection = detectSubscriptionContext({
+      candidates: [{ text: "charged USD 9.99 per month" }],
+      url: "https://example.com/checkout",
+      contextLoader: () => ({ score: 0, evidence: [] })
+    });
+
+    expect(billedDetection?.priceAfterTrial).toBe("$12.99 per month");
+    expect(chargedDetection?.priceAfterTrial).toBe("USD 9.99 per month");
+  });
 });
