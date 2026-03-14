@@ -25,7 +25,7 @@ function reminderIdFromAlarm(alarmName: string): string | null {
 
 function createNotification(
   notificationId: string,
-  options: chrome.notifications.NotificationOptions
+  options: chrome.notifications.NotificationCreateOptions
 ): Promise<string> {
   return new Promise((resolve) => {
     chrome.notifications.create(notificationId, options, (createdId) => resolve(createdId));
@@ -151,7 +151,7 @@ export async function handleReminderAlarm(alarmName: string): Promise<void> {
   }
 
   const notificationId = `trialguard:notice:${reminder.id}:${Date.now()}`;
-  const options: chrome.notifications.NotificationOptions = {
+  const options: chrome.notifications.NotificationCreateOptions = {
     type: "basic",
     iconUrl: "icons/icon128.png",
     title: `Cancel your trial for ${reminder.domainKey}`,
