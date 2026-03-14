@@ -235,6 +235,14 @@ export async function handleReminderAlarm(alarmName: string): Promise<void> {
   await putNotificationMapItem(createdId, reminder.id);
 }
 
+async function completeReminder(reminderId: string): Promise<void> {
+  const reminders = await getReminders();
+  const next = reminders.map((item) =>
+    item.id === reminderId ? { ...item, status: "completed" as const } : item
+  );
+  await setReminders(next);
+}
+
 export async function handleNotificationClicked(notificationId: string): Promise<void> {
   const reminderId = await getReminderIdFromNotification(notificationId);
   if (!reminderId) {
@@ -248,6 +256,7 @@ export async function handleNotificationClicked(notificationId: string): Promise
 
   await createTab(`https://${reminder.hostname}`);
   await clearNotification(notificationId);
+  await completeReminder(reminder.id);
 }
 
 export async function handleNotificationButtonClicked(notificationId: string, buttonIndex: number): Promise<void> {
@@ -268,6 +277,7 @@ export async function handleNotificationButtonClicked(notificationId: string, bu
   }
 
   await clearNotification(notificationId);
+  await completeReminder(reminder.id);
 }
 
 export async function getReminderById(reminderId: string): Promise<ReminderRecord | null> {

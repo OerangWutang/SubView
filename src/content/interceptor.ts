@@ -51,7 +51,8 @@ export class CommitInterceptor {
       return;
     }
 
-    if (!isLikelyCommitTarget(event.target, this.keywordOverrides)) {
+    const checkTarget = event.submitter ?? event.target;
+    if (!isLikelyCommitTarget(checkTarget, this.keywordOverrides)) {
       return;
     }
 

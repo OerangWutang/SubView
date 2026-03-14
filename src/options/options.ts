@@ -6,6 +6,7 @@ import type {
   UserSettings
 } from "../shared/types";
 import { parseCsv } from "../shared/utils";
+import { MODAL_BUFFER_MIN, MODAL_BUFFER_MAX } from "../shared/constants";
 
 function setStatus(text: string): void {
   const status = document.getElementById("status") as HTMLSpanElement;
@@ -73,6 +74,8 @@ async function init(): Promise<void> {
   requestOnStartupInput.checked = settings.requestAllSitesOnStartup;
   debugOverlayInput.checked = settings.debugOverlay;
   bufferDaysInput.value = String(settings.defaultBufferDays);
+  bufferDaysInput.min = String(MODAL_BUFFER_MIN);
+  bufferDaysInput.max = String(MODAL_BUFFER_MAX);
 
   trialKeywordsInput.value = toCsv(settings.keywordOverrides.trial);
   renewalKeywordsInput.value = toCsv(settings.keywordOverrides.renewal);
@@ -239,7 +242,13 @@ async function init(): Promise<void> {
     }
 
     const text = await file.text();
-    const parsed = JSON.parse(text) as ImportExportBlob;
+    let parsed: ImportExportBlob;
+    try {
+      parsed = JSON.parse(text) as ImportExportBlob;
+    } catch {
+      setStatus("Import failed: invalid JSON file");
+      return;
+    }
     await sendMessage({ type: "IMPORT_LOCAL_DATA", payload: { data: parsed } });
     settings = await sendMessage<UserSettings>({ type: "GET_SETTINGS" });
     renderDisabledDomains(settings);

@@ -63,7 +63,11 @@ async function run(): Promise<void> {
     void sendMessage({
       type: "SET_PENDING_DETECTION",
       payload: { detection }
-    }).catch(() => undefined);
+    }).catch((err) => {
+      if (settings.debugOverlay) {
+        console.error("[SubView] SET_PENDING_DETECTION failed", err);
+      }
+    });
     void openInterceptionModal(detection);
   }, settings.keywordOverrides);
 
@@ -119,7 +123,11 @@ async function run(): Promise<void> {
         detectedAtUrl: detection.detectedAtUrl,
         ts: new Date().toISOString()
       };
-      void sendMessage({ type: "UPSERT_DETECTION_EVENT", payload: { event } }).catch(() => undefined);
+      void sendMessage({ type: "UPSERT_DETECTION_EVENT", payload: { event } }).catch((err) => {
+        if (settings.debugOverlay) {
+          console.error("[SubView] UPSERT_DETECTION_EVENT failed", err);
+        }
+      });
     }
 
     if (detection.confidence >= DETECTION_CONFIDENCE_THRESHOLD && Date.now() >= interceptSnoozeUntil) {

@@ -9,7 +9,7 @@ export type TextCandidate = {
 
 const BASE_TRIAL_REGEX = [
   /free\s+trial/i,
-  /(\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fourteen|twenty|thirty)\s*(day|days|week|weeks|month|months)\s*(free)?/i,
+  /(\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty)\s*(day|days|week|weeks|month|months)\s*(free)?/i,
   /start\s+trial/i,
   /trial\s+ends?\s+on/i
 ];
@@ -68,14 +68,20 @@ const NUMBER_WORDS: Record<string, number> = {
   ten: 10,
   eleven: 11,
   twelve: 12,
+  thirteen: 13,
   fourteen: 14,
+  fifteen: 15,
+  sixteen: 16,
+  seventeen: 17,
+  eighteen: 18,
+  nineteen: 19,
   twenty: 20,
   thirty: 30
 };
 
 function extractTrialDays(text: string): { days: number; evidence?: string } | null {
   const match = text.match(
-    /((?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fourteen|twenty|thirty))\s*(day|days|week|weeks|month|months)/i
+    /((?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty))\s*(day|days|week|weeks|month|months)/i
   );
   if (!match) {
     return null;
@@ -85,7 +91,7 @@ function extractTrialDays(text: string): { days: number; evidence?: string } | n
   const value = /^\d+$/.test(rawValue) ? Number(rawValue) : NUMBER_WORDS[rawValue];
   const unit = match[2].toLowerCase();
 
-  if (Number.isNaN(value) || value <= 0 || value === undefined) {
+  if (value === undefined || Number.isNaN(value) || value <= 0) {
     return null;
   }
 
