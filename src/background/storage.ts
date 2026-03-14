@@ -13,7 +13,7 @@ import {
   type UserReport,
   type UserSettings
 } from "../shared/types";
-import { DETECTION_STORAGE_MAX, NOTIFICATION_MAP_TTL_MS } from "../shared/constants";
+import { DETECTION_STORAGE_MAX, MODAL_BUFFER_MAX, NOTIFICATION_MAP_TTL_MS } from "../shared/constants";
 
 function storageGet<T>(key: string): Promise<T | undefined> {
   return new Promise((resolve) => {
@@ -75,7 +75,7 @@ function normalizeSettings(input: Partial<UserSettings> | undefined): UserSettin
     merged.disabledDomainKeys = [];
   }
 
-  merged.defaultBufferDays = Math.max(0, Math.min(7, Number(merged.defaultBufferDays ?? DEFAULT_SETTINGS.defaultBufferDays)));
+  merged.defaultBufferDays = Math.max(0, Math.min(MODAL_BUFFER_MAX, Number(merged.defaultBufferDays ?? DEFAULT_SETTINGS.defaultBufferDays)));
 
   return merged;
 }
@@ -106,6 +106,12 @@ export async function runMigrations(): Promise<void> {
       [STORAGE_KEYS.darkpatternsUser]: userPolicies,
       [STORAGE_KEYS.userReports]: reports
     });
+  }
+
+  if (currentVersion < 2) {
+    // v2: adds pricePerCycle, billingCycle, renewalDate, tosRequiredDays, tosDeadlineAt to ReminderRecord
+    // and tosRequiredDays to SitePolicy. New fields are optional so no data transformation needed.
+    await storageSet({ [STORAGE_KEYS.schemaVersion]: SCHEMA_VERSION });
   }
 }
 

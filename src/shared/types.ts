@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export const STORAGE_KEYS = {
   schemaVersion: "tg_schema_version",
@@ -11,6 +11,8 @@ export const STORAGE_KEYS = {
   notificationMap: "tg_notification_map",
   pendingDetectionByTab: "tg_pending_detection_by_tab"
 } as const;
+
+export type BillingCycle = "weekly" | "monthly" | "yearly" | "custom";
 
 export type DetectionKind = "trial" | "subscription" | "unknown";
 
@@ -40,6 +42,11 @@ export type ReminderRecord = {
   manageUrl?: string;
   status: ReminderStatus;
   duplicateOf?: string;
+  pricePerCycle?: number;
+  billingCycle?: BillingCycle;
+  renewalDate?: string;
+  tosRequiredDays?: number;
+  tosDeadlineAt?: string;
 };
 
 export type Difficulty = "easy" | "medium" | "hard";
@@ -51,6 +58,7 @@ export type SitePolicy = {
   notes?: string;
   steps?: string[];
   manageUrl?: string;
+  tosRequiredDays?: number;
 };
 
 export type DetectionEvent = {
@@ -134,6 +142,10 @@ export type Message =
         bufferDays: number;
         manageUrl?: string;
         dedupeAction?: "keep-both" | "update-existing";
+        pricePerCycle?: number;
+        billingCycle?: BillingCycle;
+        renewalDate?: string;
+        tosRequiredDays?: number;
       };
     }
   | { type: "UPSERT_SITE_POLICY_OVERRIDE"; payload: { domainKey: string; policy: SitePolicy } }

@@ -1,27 +1,111 @@
 import { sendMessage } from "../shared/messaging";
 import type { DetectionEvent, ReminderRecord, UserSettings } from "../shared/types";
+import { computeMonthlyEquivalentCost, daysUntilDate } from "../shared/utils";
+
+function formatCurrency(amount: number): string {
+  return `$${amount.toFixed(2)}`;
+}
 
 function renderReminders(items: ReminderRecord[]): void {
-  const list = document.getElementById("reminders") as HTMLUListElement;
+  const list = document.getElementById("reminders") as HTMLElement;
   list.innerHTML = "";
 
   const sorted = [...items]
     .filter((item) => item.status === "active")
-    .sort((a, b) => new Date(a.reminderAt).getTime() - new Date(b.reminderAt).getTime())
-    .slice(0, 5);
+    .sort((a, b) => new Date(a.reminderAt).getTime() - new Date(b.reminderAt).getTime());
 
   if (sorted.length === 0) {
     const empty = document.createElement("li");
-    empty.textContent = "No reminders yet";
+    empty.textContent = "No active subscriptions yet";
     list.appendChild(empty);
+    renderSpendingSummary([]);
     return;
   }
 
   for (const item of sorted) {
     const li = document.createElement("li");
-    li.textContent = `${item.domainKey} - ${new Date(item.reminderAt).toLocaleDateString()}`;
+    li.className = "sub-item";
+
+    const nameRow = document.createElement("div");
+    nameRow.className = "sub-name";
+    nameRow.textContent = item.domainKey;
+
+    const detailsRow = document.createElement("div");
+    detailsRow.className = "sub-details";
+
+    const details: string[] = [];
+
+    // Days until renewal
+    if (item.renewalDate) {
+      const daysLeft = daysUntilDate(item.renewalDate);
+      details.push(daysLeft > 0 ? `Renews in ${daysLeft}d` : "Renewal past due");
+    } else {
+      const daysLeft = daysUntilDate(item.cancelAt);
+      if (daysLeft > 0) {
+        details.push(`~${daysLeft}d remaining`);
+      }
+    }
+
+    // Cost per billing cycle
+    if (item.pricePerCycle != null && item.billingCycle) {
+      details.push(`${formatCurrency(item.pricePerCycle)}/${item.billingCycle}`);
+    }
+
+    // Next payment date
+    if (item.renewalDate) {
+      details.push(`Next: ${new Date(item.renewalDate).toLocaleDateString()}`);
+    }
+
+    detailsRow.textContent = details.join(" · ");
+
+    // True cancellation deadline (ToS)
+    if (item.tosDeadlineAt) {
+      const tosRow = document.createElement("div");
+      tosRow.className = "sub-tos";
+      const tosDeadlineDays = daysUntilDate(item.tosDeadlineAt);
+      tosRow.textContent = `⚠️ Cancel by ${new Date(item.tosDeadlineAt).toLocaleDateString()} (ToS: ${item.tosRequiredDays}d required)`;
+      if (tosDeadlineDays <= 3) {
+        tosRow.style.color = "#dc2626";
+        tosRow.style.fontWeight = "600";
+      }
+      li.appendChild(nameRow);
+      li.appendChild(detailsRow);
+      li.appendChild(tosRow);
+    } else {
+      li.appendChild(nameRow);
+      li.appendChild(detailsRow);
+    }
+
     list.appendChild(li);
   }
+
+  renderSpendingSummary(sorted);
+}
+
+function renderSpendingSummary(items: ReminderRecord[]): void {
+  const summaryEl = document.getElementById("spendingSummary");
+  if (!summaryEl) return;
+
+  let totalMonthly = 0;
+  let hasAny = false;
+
+  for (const item of items) {
+    if (item.pricePerCycle != null && item.billingCycle) {
+      const monthly = computeMonthlyEquivalentCost(item.pricePerCycle, item.billingCycle);
+      if (monthly !== null) {
+        totalMonthly += monthly;
+        hasAny = true;
+      }
+    }
+  }
+
+  if (!hasAny) {
+    summaryEl.textContent = "";
+    return;
+  }
+
+  const totalYearly = totalMonthly * 12;
+  summaryEl.textContent = `Total: ${formatCurrency(totalMonthly)}/mo · ${formatCurrency(totalYearly)}/yr`;
 }
 
 function renderDetections(items: DetectionEvent[]): void {
