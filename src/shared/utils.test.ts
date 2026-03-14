@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { clamp, uid, addDays, parseCsv, uniqueStrings } from "./utils";
 
 describe("clamp", () => {
@@ -20,15 +20,30 @@ describe("clamp", () => {
 });
 
 describe("uid", () => {
-  it("generates unique ids with default prefix", () => {
+  it("generates id with expected format using stubbed values", () => {
+    vi.spyOn(Date, "now").mockReturnValue(1000000);
+    vi.spyOn(Math, "random").mockReturnValue(0.123456789);
+    const id = uid();
+    expect(id).toBe(`tg_${(1000000).toString(36)}_${(0.123456789).toString(36).slice(2, 8)}`);
+    vi.restoreAllMocks();
+  });
+
+  it("generates different ids for different random values", () => {
+    vi.spyOn(Date, "now").mockReturnValue(1000000);
+    vi.spyOn(Math, "random")
+      .mockReturnValueOnce(0.111111)
+      .mockReturnValueOnce(0.999999);
     const id1 = uid();
     const id2 = uid();
-    expect(id1).toMatch(/^tg_/);
     expect(id1).not.toBe(id2);
+    vi.restoreAllMocks();
   });
 
   it("uses custom prefix", () => {
+    vi.spyOn(Date, "now").mockReturnValue(1000000);
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
     expect(uid("rem")).toMatch(/^rem_/);
+    vi.restoreAllMocks();
   });
 });
 
