@@ -43,15 +43,20 @@ type CompiledRegexes = {
 let cachedRegexes: CompiledRegexes | null = null;
 
 function getCompiledRegexes(overrides?: KeywordOverrides): CompiledRegexes {
-  const key = JSON.stringify(overrides ?? {});
+  const keyOverrides = {
+    trial: overrides?.trial ?? [],
+    renewal: overrides?.renewal ?? [],
+    subscription: overrides?.subscription ?? []
+  };
+  const key = JSON.stringify(keyOverrides);
   if (cachedRegexes !== null && cachedRegexes.key === key) {
     return cachedRegexes;
   }
   cachedRegexes = {
     key,
-    trial: [...BASE_TRIAL_REGEX, ...keywordRegexes(overrides?.trial ?? [])],
-    renewal: [...BASE_RENEWAL_REGEX, ...keywordRegexes(overrides?.renewal ?? [])],
-    subscription: [...BASE_SUBSCRIPTION_REGEX, ...keywordRegexes(overrides?.subscription ?? [])]
+    trial: [...BASE_TRIAL_REGEX, ...keywordRegexes(keyOverrides.trial)],
+    renewal: [...BASE_RENEWAL_REGEX, ...keywordRegexes(keyOverrides.renewal)],
+    subscription: [...BASE_SUBSCRIPTION_REGEX, ...keywordRegexes(keyOverrides.subscription)]
   };
   return cachedRegexes;
 }
