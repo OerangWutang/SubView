@@ -229,10 +229,11 @@ async function init(): Promise<void> {
     const url = URL.createObjectURL(blob);
     const filename = `subview-export-${new Date().toISOString().slice(0, 10)}.json`;
 
-    chrome.downloads.download({ url, filename, saveAs: true }, () => {
+    chrome.downloads.download({ url, filename, saveAs: true }, (downloadId) => {
       URL.revokeObjectURL(url);
-      if (chrome.runtime.lastError) {
-        setStatus(`Export failed: ${chrome.runtime.lastError.message ?? "unknown error"}`);
+      const error = chrome.runtime.lastError;
+      if (error || !downloadId) {
+        setStatus(`Export failed: ${error?.message ?? "download could not be started"}`);
       } else {
         setStatus("Export started");
       }
