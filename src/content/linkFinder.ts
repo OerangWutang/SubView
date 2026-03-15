@@ -5,8 +5,8 @@ export type ManageCandidate = {
 };
 
 const KEYWORDS = ["manage", "cancel", "subscription", "billing", "account", "plan"];
-// Pre-compiled combined check mirrors the substring matching used in scoreText; intentionally
-// no word boundaries to stay consistent with the KEYWORDS.includes() calls below.
+// Pre-compiled combined check mirrors the normalized.includes(keyword) substring matching used
+// in scoreText; intentionally no word boundaries to stay consistent with that behavior.
 const KEYWORDS_QUICK_CHECK = /manage|cancel|subscription|billing|account|plan/;
 
 function normalize(text: string): string {
