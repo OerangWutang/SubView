@@ -200,13 +200,25 @@ export function findDuplicateReminder(
   const THIRTY_MIN_MS = 30 * 60 * 1000;
   const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
   const candidateCancelAtMs = new Date(candidate.cancelAt).getTime();
+  if (!Number.isFinite(candidateCancelAtMs)) {
+    // Invalid candidate.cancelAt; cannot reliably detect duplicates.
+    return null;
+  }
 
   for (const reminder of reminders) {
     if (reminder.domainKey !== candidate.domainKey) continue;
     if (reminder.kind !== candidate.kind) continue;
     if ((reminder.trialDays ?? null) !== (candidate.trialDays ?? null)) continue;
-    if (Math.abs(new Date(reminder.cancelAt).getTime() - candidateCancelAtMs) > TWENTY_FOUR_HOURS_MS) continue;
-    if (nowMs - new Date(reminder.createdAt).getTime() > THIRTY_MIN_MS) continue;
+
+    const reminderCancelAtMs = new Date(reminder.cancelAt).getTime();
+    const reminderCreatedAtMs = new Date(reminder.createdAt).getTime();
+    if (!Number.isFinite(reminderCancelAtMs) || !Number.isFinite(reminderCreatedAtMs)) {
+      // Skip reminders with invalid timestamps; they cannot be matched reliably.
+      continue;
+    }
+
+    if (Math.abs(reminderCancelAtMs - candidateCancelAtMs) > TWENTY_FOUR_HOURS_MS) continue;
+    if (nowMs - reminderCreatedAtMs > THIRTY_MIN_MS) continue;
     return reminder;
   }
 
