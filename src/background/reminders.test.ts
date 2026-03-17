@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { handleReminderAlarm } from "./reminders";
-import type { ReminderRecord } from "../shared/types";
+import { handleReminderAlarm, upsertReminderFromDetection } from "./reminders";
+import type { DetectionResult, ReminderRecord } from "../shared/types";
 
 vi.mock("./storage", () => ({
   getReminders: vi.fn(),
@@ -10,15 +10,20 @@ vi.mock("./storage", () => ({
   setReminders: vi.fn()
 }));
 
-const { getReminders } = await import("./storage");
+const { getReminders, findDuplicateReminder, setReminders } = await import("./storage");
 
 const mockNotificationsCreate = vi.fn((_id: string, _opts: unknown, cb?: (id: string) => void) => {
   if (cb) cb(_id);
 });
 
+const mockAlarmsCreate = vi.fn();
+
 vi.stubGlobal("chrome", {
   notifications: {
     create: mockNotificationsCreate
+  },
+  alarms: {
+    create: mockAlarmsCreate
   }
 });
 
@@ -35,6 +40,17 @@ function makeReminder(overrides: Partial<ReminderRecord> = {}): ReminderRecord {
     reminderAt: "2025-01-14T09:00:00.000Z",
     bufferDays: 2,
     status: "active",
+    ...overrides
+  };
+}
+
+function makeDetection(overrides: Partial<DetectionResult> = {}): DetectionResult {
+  return {
+    kind: "trial",
+    trialDays: 14,
+    confidence: 0.9,
+    evidence: [],
+    detectedAtUrl: "https://example.com/checkout",
     ...overrides
   };
 }
@@ -137,5 +153,74 @@ describe("handleReminderAlarm - delayed alarm urgency", () => {
     const opts = mockNotificationsCreate.mock.calls[0][1] as { title: string; message: string };
     expect(opts.message).toContain("Reminder due now.");
     expect(opts.message).not.toContain("while you were away");
+  });
+});
+
+describe("upsertReminderFromDetection - deduplication", () => {
+  const baseInput = {
+    detection: makeDetection(),
+    hostname: "example.com",
+    domainKey: "example.com",
+    bufferDays: 2
+  };
+
+  beforeEach(() => {
+    mockAlarmsCreate.mockClear();
+    vi.mocked(setReminders).mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("updates the existing reminder by default when a duplicate is found", async () => {
+    const existing = makeReminder({ id: "rem-existing" });
+    vi.mocked(getReminders).mockResolvedValue([existing]);
+    vi.mocked(findDuplicateReminder).mockReturnValue(existing);
+
+    const result = await upsertReminderFromDetection(baseInput);
+
+    expect(result.reminder.id).toBe("rem-existing");
+    expect(result.duplicateCandidateId).toBe("rem-existing");
+    const savedReminders = vi.mocked(setReminders).mock.calls[0][0] as ReminderRecord[];
+    expect(savedReminders).toHaveLength(1);
+    expect(savedReminders[0].id).toBe("rem-existing");
+  });
+
+  it("updates the existing reminder when dedupeAction is update-existing", async () => {
+    const existing = makeReminder({ id: "rem-existing" });
+    vi.mocked(getReminders).mockResolvedValue([existing]);
+    vi.mocked(findDuplicateReminder).mockReturnValue(existing);
+
+    const result = await upsertReminderFromDetection({ ...baseInput, dedupeAction: "update-existing" });
+
+    expect(result.reminder.id).toBe("rem-existing");
+    const savedReminders = vi.mocked(setReminders).mock.calls[0][0] as ReminderRecord[];
+    expect(savedReminders).toHaveLength(1);
+  });
+
+  it("creates a new entry when dedupeAction is keep-both even if duplicate found", async () => {
+    const existing = makeReminder({ id: "rem-existing" });
+    vi.mocked(getReminders).mockResolvedValue([existing]);
+    vi.mocked(findDuplicateReminder).mockReturnValue(existing);
+
+    const result = await upsertReminderFromDetection({ ...baseInput, dedupeAction: "keep-both" });
+
+    expect(result.reminder.id).not.toBe("rem-existing");
+    expect(result.duplicateCandidateId).toBe("rem-existing");
+    const savedReminders = vi.mocked(setReminders).mock.calls[0][0] as ReminderRecord[];
+    expect(savedReminders).toHaveLength(2);
+  });
+
+  it("creates a new entry when no duplicate is found", async () => {
+    vi.mocked(getReminders).mockResolvedValue([]);
+    vi.mocked(findDuplicateReminder).mockReturnValue(null);
+
+    const result = await upsertReminderFromDetection(baseInput);
+
+    expect(result.reminder.id).toMatch(/^rem_/);
+    expect(result.duplicateCandidateId).toBeUndefined();
+    const savedReminders = vi.mocked(setReminders).mock.calls[0][0] as ReminderRecord[];
+    expect(savedReminders).toHaveLength(1);
   });
 });

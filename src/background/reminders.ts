@@ -120,7 +120,7 @@ export async function upsertReminderFromDetection(input: {
   const current = await getReminders();
   const duplicate = findDuplicateReminder(current, candidateCore, now.getTime());
 
-  if (duplicate && input.dedupeAction === "update-existing") {
+  if (duplicate && input.dedupeAction !== "keep-both") {
     const updated: ReminderRecord = {
       ...duplicate,
       hostname: input.hostname,
