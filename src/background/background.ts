@@ -30,6 +30,7 @@ import {
 import { exportReminderAsIcs } from "./ics";
 import { getDomainKey, getHostname } from "../shared/domain";
 import { uid } from "../shared/utils";
+import { SPA_NAVIGATION_DEBOUNCE_MS } from "../shared/constants";
 
 type RegisteredScript = chrome.scripting.RegisteredContentScript;
 const DYNAMIC_CONTENT_SCRIPT_ID = "subview-content";
@@ -325,18 +326,36 @@ chrome.notifications.onButtonClicked.addListener((notificationId, buttonIndex) =
   void handleNotificationButtonClicked(notificationId, buttonIndex);
 });
 
+const _spaNavigateTimers = new Map<number, ReturnType<typeof setTimeout>>();
+
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
   if (!changeInfo.url) {
     return;
   }
 
-  void sendTabMessage(tabId, {
-    type: "SPA_NAVIGATED",
-    payload: { url: changeInfo.url }
-  });
+  const existing = _spaNavigateTimers.get(tabId);
+  if (existing !== undefined) {
+    clearTimeout(existing);
+  }
+
+  _spaNavigateTimers.set(
+    tabId,
+    setTimeout(() => {
+      _spaNavigateTimers.delete(tabId);
+      void sendTabMessage(tabId, {
+        type: "SPA_NAVIGATED",
+        payload: { url: changeInfo.url! }
+      });
+    }, SPA_NAVIGATION_DEBOUNCE_MS)
+  );
 });
 
 chrome.tabs.onRemoved.addListener((tabId) => {
+  const timer = _spaNavigateTimers.get(tabId);
+  if (timer !== undefined) {
+    clearTimeout(timer);
+    _spaNavigateTimers.delete(tabId);
+  }
   void clearPendingDetectionForTab(tabId);
 });
 

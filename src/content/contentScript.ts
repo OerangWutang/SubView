@@ -1,3 +1,9 @@
+declare global {
+  interface Window {
+    __SUBVIEW_INJECTED?: boolean;
+  }
+}
+
 import { DETECTION_CONFIDENCE_THRESHOLD } from "../shared/constants";
 import { getDomainKey, getHostname } from "../shared/domain";
 import { sendMessage } from "../shared/messaging";
@@ -78,7 +84,8 @@ async function run(): Promise<void> {
     interceptSnoozeUntil = 0;
     interceptor.disarm();
     interceptor.clearBlockedFormSubmission();
-    observer.forceScan(document.body);
+    // Do not forceScan here: let the IncrementalTextObserver's MutationObserver
+    // naturally pick up the new route's text once the SPA framework renders it.
   };
 
   const observer = new IncrementalTextObserver((incomingCandidates) => {
@@ -237,7 +244,13 @@ async function run(): Promise<void> {
   }
 }
 
-void run().catch((error) => {
-  // Fail silently in-page to avoid checkout disruption.
-  console.error("SubView content script failed", error);
-});
+if (window.__SUBVIEW_INJECTED) {
+  // Content script already running in this context — skip re-execution.
+} else {
+  window.__SUBVIEW_INJECTED = true;
+  void run().catch((error) => {
+    // Fail silently in-page to avoid checkout disruption.
+    console.error("SubView content script failed", error);
+  });
+}
+

@@ -10,3 +10,4 @@ export const SCAN_MAX_SNIPPETS = 120;
 export const REMINDER_HOUR_LOCAL = 9;
 export const SNOOZE_DURATION_MIN_MS = 60 * 1000;
 export const SNOOZE_DURATION_MAX_MS = 60 * 60 * 1000;
+export const SPA_NAVIGATION_DEBOUNCE_MS = 200;
