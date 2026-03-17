@@ -512,6 +512,9 @@ export class SubViewOverlay {
     const toast = document.createElement("div");
     toast.className = "tg-toast";
     toast.textContent = message;
+    toast.setAttribute("role", "status");
+    toast.setAttribute("aria-live", "polite");
+    toast.setAttribute("aria-atomic", "true");
     this.shadow.appendChild(toast);
     setTimeout(() => toast.remove(), durationMs);
   }
