@@ -22,7 +22,7 @@ export class SubViewOverlay {
   private readonly host: HTMLDivElement;
   private readonly shadow: ShadowRoot;
   private readonly hud: HTMLDivElement;
-  private readonly modalRoot: HTMLDivElement;
+  private readonly modalRoot: HTMLDialogElement;
   private readonly styleEl: HTMLStyleElement;
 
   private activeCallbacks: ModalCallbacks | null = null;
@@ -50,17 +50,7 @@ export class SubViewOverlay {
         display: none;
         max-width: 280px;
       }
-      .tg-modal-backdrop {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.35);
-        z-index: 2147483647;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        padding: 14px;
-      }
-      .tg-modal {
+      dialog.tg-modal {
         width: min(520px, 94vw);
         background: #ffffff;
         color: #111827;
@@ -68,6 +58,12 @@ export class SubViewOverlay {
         border: 1px solid #d1d5db;
         box-shadow: 0 20px 50px rgba(0,0,0,0.3);
         font: 14px/1.45 ui-sans-serif, system-ui, sans-serif;
+        padding: 0;
+        margin: auto;
+        outline: none;
+      }
+      dialog.tg-modal::backdrop {
+        background: rgba(0, 0, 0, 0.35);
       }
       .tg-modal header { padding: 14px 16px; border-bottom: 1px solid #e5e7eb; }
       .tg-modal h2 { margin: 0; font-size: 17px; }
@@ -132,8 +128,8 @@ export class SubViewOverlay {
     this.hud = document.createElement("div");
     this.hud.className = "tg-hud";
 
-    this.modalRoot = document.createElement("div");
-    this.modalRoot.className = "tg-modal-backdrop";
+    this.modalRoot = document.createElement("dialog");
+    this.modalRoot.className = "tg-modal";
 
     this.shadow.append(this.styleEl, this.hud, this.modalRoot);
     document.documentElement.appendChild(this.host);
@@ -169,7 +165,7 @@ export class SubViewOverlay {
   }
 
   hideModal(reason: "continue" | "dismiss" | "site-disabled" = "dismiss"): void {
-    this.modalRoot.style.display = "none";
+    this.modalRoot.close();
     this.modalRoot.innerHTML = "";
     this.activeCallbacks?.onDismiss(reason);
     this.activeCallbacks = null;
@@ -196,11 +192,7 @@ export class SubViewOverlay {
     const trialDays = params.detection.trialDays ?? 30;
     const policy = params.sitePolicy;
 
-    const backdrop = document.createElement("div");
-    backdrop.className = "tg-modal";
-    backdrop.setAttribute("role", "dialog");
-    backdrop.setAttribute("aria-modal", "true");
-    backdrop.setAttribute("aria-labelledby", "tg-title");
+    this.modalRoot.setAttribute("aria-labelledby", "tg-title");
 
     const header = document.createElement("header");
     const title = document.createElement("h2");
@@ -454,41 +446,17 @@ export class SubViewOverlay {
     });
 
     this.modalRoot.onclick = (event) => {
-      if (event.target === this.modalRoot) {
+      const rect = this.modalRoot.getBoundingClientRect();
+      const { clientX, clientY } = event;
+      if (clientY < rect.top || clientY > rect.bottom || clientX < rect.left || clientX > rect.right) {
         this.hideModal("dismiss");
       }
     };
 
-    const onKeydown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        this.hideModal("dismiss");
-      }
-
-      if (event.key === "Tab") {
-        const focusables = Array.from(
-          backdrop.querySelectorAll<HTMLElement>("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])")
-        ).filter((el) => !el.hasAttribute("disabled") && el.getClientRects().length > 0);
-
-        if (focusables.length === 0) {
-          return;
-        }
-
-        const first = focusables[0];
-        const last = focusables[focusables.length - 1];
-        const active = (this.shadow.activeElement as HTMLElement | null) ?? (document.activeElement as HTMLElement | null);
-
-        if (event.shiftKey && active === first) {
-          event.preventDefault();
-          last.focus();
-        } else if (!event.shiftKey && active === last) {
-          event.preventDefault();
-          first.focus();
-        }
-      }
+    this.modalRoot.oncancel = (event) => {
+      event.preventDefault();
+      this.hideModal("dismiss");
     };
-
-    this.modalRoot.onkeydown = onKeydown;
 
     body.append(summary, dateText, bufferRow, renewalRow, priceRow, tosRow, tosDeadlineDisplay);
     if (policyWarning.className) {
@@ -499,11 +467,9 @@ export class SubViewOverlay {
     }
     body.append(linksContainer, actions, status);
 
-    backdrop.append(header, body);
-
     this.modalRoot.innerHTML = "";
-    this.modalRoot.appendChild(backdrop);
-    this.modalRoot.style.display = "flex";
+    this.modalRoot.append(header, body);
+    this.modalRoot.showModal();
 
     addReminderButton.focus();
   }
