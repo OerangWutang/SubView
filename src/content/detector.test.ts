@@ -97,6 +97,7 @@ describe("detectSubscriptionContext", () => {
   describe("CSS dark pattern detection", () => {
     afterEach(() => {
       vi.restoreAllMocks();
+      document.body.innerHTML = "";
     });
 
     function makeVisibleElement(styles: Partial<CSSStyleDeclaration>): WeakRef<Element> {
