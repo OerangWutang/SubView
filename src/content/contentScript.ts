@@ -78,7 +78,11 @@ async function run(): Promise<void> {
     interceptSnoozeUntil = 0;
     interceptor.disarm();
     interceptor.clearBlockedFormSubmission();
-    observer.forceScan(document.body);
+    // Defer the scan to the next animation frame so the SPA framework has time to
+    // render the new route's DOM before we re-sample it.
+    requestAnimationFrame(() => {
+      observer.forceScan(document.body);
+    });
   };
 
   const observer = new IncrementalTextObserver((incomingCandidates) => {
@@ -237,7 +241,24 @@ async function run(): Promise<void> {
   }
 }
 
-void run().catch((error) => {
-  // Fail silently in-page to avoid checkout disruption.
-  console.error("SubView content script failed", error);
-});
+// Use a per-extension key (derived from the runtime ID) defined non-enumerably so
+// it is harder to detect or tamper with from page scripts.
+const _injectionFlag = `__subview_${chrome.runtime.id}`;
+
+if ((window as unknown as Record<string, unknown>)[_injectionFlag]) {
+  // Content script already running in this context — skip re-execution.
+} else {
+  Object.defineProperty(window, _injectionFlag, {
+    value: true,
+    enumerable: false,
+    configurable: true,
+    writable: true
+  });
+  void run().catch((error) => {
+    // If initialization fails, clear the flag so a retry injection can succeed.
+    (window as unknown as Record<string, unknown>)[_injectionFlag] = false;
+    // Fail silently in-page to avoid checkout disruption.
+    console.error("SubView content script failed", error);
+  });
+}
+
