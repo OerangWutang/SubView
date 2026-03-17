@@ -106,6 +106,10 @@ export class IncrementalTextObserver {
     }
     this.queue.clear();
     this.queue.add(root);
+    if (this.timer !== null) {
+      window.clearTimeout(this.timer);
+      this.timer = null;
+    }
     this.flushQueue();
   }
 
