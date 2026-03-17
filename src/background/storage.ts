@@ -358,46 +358,77 @@ async function pruneExpiredPendingDetections(map: PendingDetectionMap): Promise<
   return next;
 }
 
-// NOTE: setPendingDetectionForTab and consumePendingDetectionForTab use a
-// read-modify-write pattern. This is safe because the background service worker
-// runs in a single-threaded JavaScript environment — no two message handlers
-// can interleave mid-execution. Tab duplication creates a new tab ID with no
-// pending detection (correct), and rapid refreshes are handled by the TTL-based
-// expiry which prevents stale detections from resurfacing.
+// Serialize read-modify-write operations on the pending-detection map to avoid
+// lost updates when multiple message handlers run concurrently (across `await`s).
+let pendingDetectionLock: Promise<void> = Promise.resolve();
+
+async function withPendingDetectionLock<T>(fn: () => Promise<T>): Promise<T> {
+  // Chain operations so each one waits for the previous to finish, even though
+  // the service worker is single-threaded.
+  let releaseLock: () => void;
+  const previous = pendingDetectionLock;
+  pendingDetectionLock = new Promise<void>((resolve) => {
+    releaseLock = resolve;
+  });
+
+  await previous;
+  try {
+    return await fn();
+  } finally {
+    // releaseLock is always set in the constructor above
+    releaseLock!();
+  }
+}
+
+// NOTE: setPendingDetectionForTab, consumePendingDetectionForTab, and
+// clearPendingDetectionForTab use a read-modify-write pattern on a shared
+// map stored in session storage. Although the MV3 background service worker
+// runs in a single-threaded JavaScript environment, `await` points allow
+// other message handlers to run and interleave these operations. To prevent
+// lost updates, all such operations are serialized via withPendingDetectionLock.
+// Tab duplication creates a new tab ID with no pending detection (correct),
+// and rapid refreshes are handled by the TTL-based expiry which prevents
+// stale detections from resurfacing.
 export async function setPendingDetectionForTab(
   tabId: number,
   detection: DetectionResult,
   ttlMs = 5 * 60 * 1000
 ): Promise<void> {
-  const map = await pruneExpiredPendingDetections(await getPendingDetectionMap());
-  map[String(tabId)] = {
-    detection,
-    expiresAt: Date.now() + ttlMs
-  };
-  await setPendingDetectionMap(map);
+  await withPendingDetectionLock(async () => {
+    const map = await pruneExpiredPendingDetections(await getPendingDetectionMap());
+    map[String(tabId)] = {
+      detection,
+      expiresAt: Date.now() + ttlMs
+    };
+    await setPendingDetectionMap(map);
+  });
 }
 
 export async function consumePendingDetectionForTab(tabId: number): Promise<DetectionResult | null> {
-  const map = await pruneExpiredPendingDetections(await getPendingDetectionMap());
-  const key = String(tabId);
-  const item = map[key];
+  return withPendingDetectionLock(async () => {
+    const map = await pruneExpiredPendingDetections(await getPendingDetectionMap());
+    const key = String(tabId);
+    const item = map[key];
 
-  if (!item) {
-    return null;
-  }
+    if (!item) {
+      return null;
+    }
 
-  delete map[key];
-  await setPendingDetectionMap(map);
-  return item.detection;
+    delete map[key];
+    await setPendingDetectionMap(map);
+    return item.detection;
+  });
 }
 
 export async function clearPendingDetectionForTab(tabId: number): Promise<void> {
-  const map = await pruneExpiredPendingDetections(await getPendingDetectionMap());
-  const key = String(tabId);
-  if (!map[key]) {
-    return;
-  }
+  await withPendingDetectionLock(async () => {
+    const map = await pruneExpiredPendingDetections(await getPendingDetectionMap());
+    const key = String(tabId);
+    if (!map[key]) {
+      return;
+    }
 
-  delete map[key];
-  await setPendingDetectionMap(map);
+    delete map[key];
+    await setPendingDetectionMap(map);
+  });
 }
