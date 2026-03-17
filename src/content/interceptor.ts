@@ -36,10 +36,10 @@ export class CommitInterceptor {
       const clickable = event.target.closest("button, input[type='submit'], [role='button'], a");
       if (clickable instanceof HTMLElement) {
         this.blockedClickTarget = clickable;
-        const isSafeSelector = (v: string) => /^[\w-]+$/.test(v);
-        const id = clickable.id && isSafeSelector(clickable.id) ? `#${clickable.id}` : "";
+        const rawId = clickable.id;
+        const id = rawId ? `#${CSS.escape(rawId)}` : "";
         const rawTestId = clickable.getAttribute("data-testid");
-        const testId = rawTestId && isSafeSelector(rawTestId) ? `[data-testid='${rawTestId}']` : "";
+        const testId = rawTestId ? `[data-testid='${CSS.escape(rawTestId)}']` : "";
         this.blockedFallbackSelector = id || testId || null;
         this.blockedClickForm = clickable.closest("form");
       }
