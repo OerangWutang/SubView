@@ -77,4 +77,27 @@ describe("CommitInterceptor - SPA Replay Resilience", () => {
     expect(form.requestSubmit).not.toHaveBeenCalled();
     expect(HTMLFormElement.prototype.submit).not.toHaveBeenCalled();
   });
+
+  it("Scenario 4: SPA re-render - fallback selector finds new element", () => {
+    button.click();
+
+    // Simulate SPA re-render: old form removed, new identical structure injected
+    form.remove();
+    expect(button.isConnected).toBe(false);
+
+    const newForm = document.createElement("form");
+    newForm.id = "checkout-form";
+    const newButton = document.createElement("button");
+    newButton.type = "submit";
+    newButton.id = "submit-btn";
+    newButton.textContent = "Start Free Trial";
+    const newButtonClickSpy = vi.spyOn(newButton, "click");
+    newForm.appendChild(newButton);
+    document.body.appendChild(newForm);
+
+    const resumed = interceptor.continueBlockedFormSubmission();
+
+    expect(resumed).toBe(true);
+    expect(newButtonClickSpy).toHaveBeenCalledOnce();
+  });
 });
