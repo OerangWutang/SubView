@@ -75,9 +75,27 @@ function normalizeSettings(input: Partial<UserSettings> | undefined): UserSettin
     merged.disabledDomainKeys = [];
   }
 
-  merged.defaultBufferDays = Math.max(MODAL_BUFFER_MIN, Math.min(MODAL_BUFFER_MAX, Number(merged.defaultBufferDays ?? DEFAULT_SETTINGS.defaultBufferDays)));
+  const rawDefaultBufferDays = Number(
+    merged.defaultBufferDays ?? DEFAULT_SETTINGS.defaultBufferDays
+  );
+  const coercedDefaultBufferDays = Number.isFinite(rawDefaultBufferDays)
+    ? rawDefaultBufferDays
+    : DEFAULT_SETTINGS.defaultBufferDays;
+  merged.defaultBufferDays = Math.max(
+    MODAL_BUFFER_MIN,
+    Math.min(MODAL_BUFFER_MAX, coercedDefaultBufferDays)
+  );
 
-  merged.snoozeDurationMs = Math.max(SNOOZE_DURATION_MIN_MS, Math.min(SNOOZE_DURATION_MAX_MS, Number(merged.snoozeDurationMs ?? DEFAULT_SETTINGS.snoozeDurationMs)));
+  const rawSnoozeDurationMs = Number(
+    merged.snoozeDurationMs ?? DEFAULT_SETTINGS.snoozeDurationMs
+  );
+  const coercedSnoozeDurationMs = Number.isFinite(rawSnoozeDurationMs)
+    ? rawSnoozeDurationMs
+    : DEFAULT_SETTINGS.snoozeDurationMs;
+  merged.snoozeDurationMs = Math.max(
+    SNOOZE_DURATION_MIN_MS,
+    Math.min(SNOOZE_DURATION_MAX_MS, coercedSnoozeDurationMs)
+  );
 
   return merged;
 }
