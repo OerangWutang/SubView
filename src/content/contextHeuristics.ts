@@ -38,7 +38,7 @@ let _commitTermsCache: string[] | null = null;
 let _commitTermsCacheKey: string | null = null;
 
 export function getCommitTerms(overrides?: KeywordOverrides): string[] {
-  const cacheKey = JSON.stringify(overrides ?? null);
+  const cacheKey = JSON.stringify(overrides?.commit ?? null);
   if (_commitTermsCache && _commitTermsCacheKey === cacheKey) {
     return _commitTermsCache;
   }
