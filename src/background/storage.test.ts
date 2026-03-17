@@ -27,7 +27,9 @@ function makeReminder(overrides: Partial<ReminderRecord> = {}): ReminderRecord {
 }
 
 describe("findDuplicateReminder", () => {
+  vi.useFakeTimers();
   const now = Date.now();
+  vi.setSystemTime(now);
   const cancelAt = new Date(now + 12 * 24 * 60 * 60 * 1000).toISOString();
   const candidate = {
     domainKey: "example.com",
