@@ -85,22 +85,7 @@ async function run(): Promise<void> {
     });
   };
 
-    // After clearing state (e.g., on SPA navigation), ensure the current DOM
-    // is re-sampled even if no further mutations occur by forcing a deferred scan.
-    const triggerRescan = (): void => {
-      if (!document.body) {
-        return;
-      }
-      observer.forceScan(document.body);
-    };
-
-    if (typeof window.requestAnimationFrame === "function") {
-      window.requestAnimationFrame(() => {
-        triggerRescan();
-      });
-    } else {
-      setTimeout(triggerRescan, 0);
-    }
+  const observer = new IncrementalTextObserver((incomingCandidates) => {
     rollingCandidates.push(...incomingCandidates);
     if (rollingCandidates.length > 220) {
       rollingCandidates.splice(0, rollingCandidates.length - 220);
@@ -274,8 +259,6 @@ if ((window as unknown as Record<string, unknown>)[_injectionFlag]) {
     (window as unknown as Record<string, unknown>)[_injectionFlag] = false;
     // Fail silently in-page to avoid checkout disruption.
     console.error("SubView content script failed", error);
-    // Allow a future reinjection attempt if initialization failed.
-    window.__SUBVIEW_INJECTED = false;
   });
 }
 
