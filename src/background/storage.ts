@@ -13,7 +13,7 @@ import {
   type UserReport,
   type UserSettings
 } from "../shared/types";
-import { DETECTION_STORAGE_MAX, MODAL_BUFFER_MAX, MODAL_BUFFER_MIN, NOTIFICATION_MAP_TTL_MS } from "../shared/constants";
+import { DETECTION_STORAGE_MAX, MODAL_BUFFER_MAX, MODAL_BUFFER_MIN, NOTIFICATION_MAP_TTL_MS, SNOOZE_DURATION_MAX_MS, SNOOZE_DURATION_MIN_MS } from "../shared/constants";
 
 function storageGet<T>(key: string): Promise<T | undefined> {
   return new Promise((resolve) => {
@@ -75,7 +75,27 @@ function normalizeSettings(input: Partial<UserSettings> | undefined): UserSettin
     merged.disabledDomainKeys = [];
   }
 
-  merged.defaultBufferDays = Math.max(MODAL_BUFFER_MIN, Math.min(MODAL_BUFFER_MAX, Number(merged.defaultBufferDays ?? DEFAULT_SETTINGS.defaultBufferDays)));
+  const rawDefaultBufferDays = Number(
+    merged.defaultBufferDays ?? DEFAULT_SETTINGS.defaultBufferDays
+  );
+  const coercedDefaultBufferDays = Number.isFinite(rawDefaultBufferDays)
+    ? rawDefaultBufferDays
+    : DEFAULT_SETTINGS.defaultBufferDays;
+  merged.defaultBufferDays = Math.max(
+    MODAL_BUFFER_MIN,
+    Math.min(MODAL_BUFFER_MAX, coercedDefaultBufferDays)
+  );
+
+  const rawSnoozeDurationMs = Number(
+    merged.snoozeDurationMs ?? DEFAULT_SETTINGS.snoozeDurationMs
+  );
+  const coercedSnoozeDurationMs = Number.isFinite(rawSnoozeDurationMs)
+    ? rawSnoozeDurationMs
+    : DEFAULT_SETTINGS.snoozeDurationMs;
+  merged.snoozeDurationMs = Math.max(
+    SNOOZE_DURATION_MIN_MS,
+    Math.min(SNOOZE_DURATION_MAX_MS, coercedSnoozeDurationMs)
+  );
 
   return merged;
 }

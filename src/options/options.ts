@@ -6,7 +6,7 @@ import type {
   UserSettings
 } from "../shared/types";
 import { parseCsv } from "../shared/utils";
-import { MODAL_BUFFER_MIN, MODAL_BUFFER_MAX } from "../shared/constants";
+import { MODAL_BUFFER_MIN, MODAL_BUFFER_MAX, SNOOZE_DURATION_MIN_MS, SNOOZE_DURATION_MAX_MS } from "../shared/constants";
 
 function setStatus(text: string): void {
   const status = document.getElementById("status") as HTMLSpanElement;
@@ -64,6 +64,7 @@ async function init(): Promise<void> {
   const requestOnStartupInput = document.getElementById("requestOnStartup") as HTMLInputElement;
   const debugOverlayInput = document.getElementById("debugOverlay") as HTMLInputElement;
   const bufferDaysInput = document.getElementById("bufferDays") as HTMLInputElement;
+  const snoozeDurationMinsInput = document.getElementById("snoozeDurationMins") as HTMLInputElement;
 
   const trialKeywordsInput = document.getElementById("trialKeywords") as HTMLInputElement;
   const renewalKeywordsInput = document.getElementById("renewalKeywords") as HTMLInputElement;
@@ -76,6 +77,9 @@ async function init(): Promise<void> {
   bufferDaysInput.value = String(settings.defaultBufferDays);
   bufferDaysInput.min = String(MODAL_BUFFER_MIN);
   bufferDaysInput.max = String(MODAL_BUFFER_MAX);
+  snoozeDurationMinsInput.value = String(Math.round(settings.snoozeDurationMs / 60000));
+  snoozeDurationMinsInput.min = String(Math.round(SNOOZE_DURATION_MIN_MS / 60000));
+  snoozeDurationMinsInput.max = String(Math.round(SNOOZE_DURATION_MAX_MS / 60000));
 
   trialKeywordsInput.value = toCsv(settings.keywordOverrides.trial);
   renewalKeywordsInput.value = toCsv(settings.keywordOverrides.renewal);
@@ -92,6 +96,7 @@ async function init(): Promise<void> {
         requestAllSitesOnStartup: requestOnStartupInput.checked,
         debugOverlay: debugOverlayInput.checked,
         defaultBufferDays: Number(bufferDaysInput.value),
+        snoozeDurationMs: Math.round(Number(snoozeDurationMinsInput.value)) * 60000,
         keywordOverrides: {
           trial: parseCsv(trialKeywordsInput.value),
           renewal: parseCsv(renewalKeywordsInput.value),
@@ -108,6 +113,7 @@ async function init(): Promise<void> {
     requestOnStartupInput,
     debugOverlayInput,
     bufferDaysInput,
+    snoozeDurationMinsInput,
     trialKeywordsInput,
     renewalKeywordsInput,
     subscriptionKeywordsInput,

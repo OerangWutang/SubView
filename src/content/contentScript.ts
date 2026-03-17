@@ -215,14 +215,14 @@ async function run(): Promise<void> {
           if (reason === "continue") {
             const resumed = interceptor.continueBlockedFormSubmission();
             if (!resumed) {
-              alert("SubView: Could not automatically resume checkout. Please click the checkout button again.");
+              overlay.showToast("SubView: Could not automatically resume checkout. Please click the checkout button again.");
             }
           } else {
             interceptor.clearBlockedFormSubmission();
           }
 
           if (reason === "dismiss" || reason === "site-disabled") {
-            interceptSnoozeUntil = Date.now() + 5 * 60 * 1000;
+            interceptSnoozeUntil = Date.now() + settings.snoozeDurationMs;
             interceptor.disarm();
           }
         },

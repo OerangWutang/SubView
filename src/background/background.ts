@@ -88,6 +88,16 @@ function openOptionsPage(): Promise<void> {
   });
 }
 
+const RESTRICTED_URL_PATTERNS = [
+  /^https:\/\/chrome\.google\.com\/webstore/i,
+  /^https:\/\/chromewebstore\.google\.com\//i,
+  /^https:\/\/microsoftedge\.microsoft\.com\/addons/i
+];
+
+function isRestrictedUrl(url: string): boolean {
+  return RESTRICTED_URL_PATTERNS.some((pattern) => pattern.test(url));
+}
+
 function hasStaticContentScriptInManifest(): boolean {
   return Boolean(chrome.runtime.getManifest().content_scripts?.length);
 }
@@ -113,7 +123,7 @@ async function ensureContentScriptRegistration(): Promise<void> {
     ]);
     const tabs = await queryTabs();
     for (const tab of tabs) {
-      if (tab.id && tab.url && /^https?:/i.test(tab.url)) {
+      if (tab.id && tab.url && /^https?:/i.test(tab.url) && !isRestrictedUrl(tab.url)) {
         try {
           await executeContentScript(tab.id);
         } catch (error) {

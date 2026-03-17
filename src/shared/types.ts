@@ -81,6 +81,7 @@ export type KeywordOverrides = {
 export type UserSettings = {
   enabled: boolean;
   defaultBufferDays: number;
+  snoozeDurationMs: number;
   disabledDomainKeys: string[];
   keywordOverrides: KeywordOverrides;
   requestAllSitesOnStartup: boolean;
@@ -164,6 +165,7 @@ export type MessageResponse<T = unknown> =
 export const DEFAULT_SETTINGS: UserSettings = {
   enabled: true,
   defaultBufferDays: 2,
+  snoozeDurationMs: 5 * 60 * 1000,
   disabledDomainKeys: [],
   keywordOverrides: {
     trial: [],
