@@ -274,6 +274,8 @@ if ((window as unknown as Record<string, unknown>)[_injectionFlag]) {
     (window as unknown as Record<string, unknown>)[_injectionFlag] = false;
     // Fail silently in-page to avoid checkout disruption.
     console.error("SubView content script failed", error);
+    // Allow a future reinjection attempt if initialization failed.
+    window.__SUBVIEW_INJECTED = false;
   });
 }
 
