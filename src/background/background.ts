@@ -315,7 +315,7 @@ chrome.permissions.onRemoved.addListener(() => {
 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
-  void handleReminderAlarm(alarm.name);
+  void handleReminderAlarm(alarm.name, alarm.scheduledTime);
 });
 
 chrome.notifications.onClicked.addListener((notificationId) => {

@@ -12,6 +12,7 @@ import {
 
 const ALARM_PREFIX = "subview:reminder:";
 const TOS_ALARM_PREFIX = "subview:tos-warning:";
+const LATE_ALARM_THRESHOLD_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export function alarmNameForReminder(reminderId: string): string {
   return `${ALARM_PREFIX}${reminderId}`;
@@ -186,7 +187,7 @@ async function findReminder(reminderId: string): Promise<ReminderRecord | null> 
   return reminders.find((item) => item.id === reminderId) ?? null;
 }
 
-export async function handleReminderAlarm(alarmName: string): Promise<void> {
+export async function handleReminderAlarm(alarmName: string, scheduledTime: number): Promise<void> {
   const reminderId = reminderIdFromAlarm(alarmName);
   if (!reminderId) {
     return;
@@ -199,25 +200,35 @@ export async function handleReminderAlarm(alarmName: string): Promise<void> {
 
   const isTos = isTosAlarm(alarmName);
   const notificationId = `subview:notice:${reminder.id}:${Date.now()}`;
+  const isLate = Date.now() - scheduledTime > LATE_ALARM_THRESHOLD_MS;
 
   let title: string;
   let message: string;
 
   if (isTos && reminder.tosDeadlineAt) {
     title = `⚠️ ToS Cancellation Deadline for ${reminder.domainKey}`;
-    message = reminder.tosRequiredDays
-      ? `Terms of Service require cancellation at least ${reminder.tosRequiredDays} day(s) before renewal. Cancel today to avoid being charged.`
-      : `Today is your last safe cancellation day per Terms of Service. Cancel now to avoid being charged.`;
+    if (isLate) {
+      message = `Your ToS cancellation deadline for ${reminder.domainKey} may have passed while you were away. Check your subscription status immediately.`;
+    } else {
+      message = reminder.tosRequiredDays
+        ? `Terms of Service require cancellation at least ${reminder.tosRequiredDays} day(s) before renewal. Cancel today to avoid being charged.`
+        : `Today is your last safe cancellation day per Terms of Service. Cancel now to avoid being charged.`;
+    }
   } else {
-    const daysUntilRenewal = reminder.renewalDate ? daysUntilDate(reminder.renewalDate) : null;
-    const renewalInfo = daysUntilRenewal !== null ? ` Renewal in ${daysUntilRenewal} day(s).` : "";
-    const costInfo = reminder.pricePerCycle != null && reminder.billingCycle
-      ? ` Cost: $${reminder.pricePerCycle.toFixed(2)}/${reminder.billingCycle}.`
-      : "";
-    title = `Cancel your ${reminder.kind} for ${reminder.domainKey}`;
-    message = reminder.manageUrl
-      ? `Reminder due now.${renewalInfo}${costInfo} Open the site or jump to your manage link.`
-      : `Reminder due now.${renewalInfo}${costInfo} Open the site to review and cancel if needed.`;
+    if (isLate) {
+      title = `⏰ Overdue: Cancel your ${reminder.kind} for ${reminder.domainKey}`;
+      message = `Your ${reminder.kind} for ${reminder.domainKey} might have ended while you were away!`;
+    } else {
+      const daysUntilRenewal = reminder.renewalDate ? daysUntilDate(reminder.renewalDate) : null;
+      const renewalInfo = daysUntilRenewal !== null ? ` Renewal in ${daysUntilRenewal} day(s).` : "";
+      const costInfo = reminder.pricePerCycle != null && reminder.billingCycle
+        ? ` Cost: $${reminder.pricePerCycle.toFixed(2)}/${reminder.billingCycle}.`
+        : "";
+      title = `Cancel your ${reminder.kind} for ${reminder.domainKey}`;
+      message = reminder.manageUrl
+        ? `Reminder due now.${renewalInfo}${costInfo} Open the site or jump to your manage link.`
+        : `Reminder due now.${renewalInfo}${costInfo} Open the site to review and cancel if needed.`;
+    }
   }
 
   const options: chrome.notifications.NotificationCreateOptions = {
