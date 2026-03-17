@@ -45,6 +45,7 @@ describe("handleReminderAlarm - delayed alarm urgency", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -125,7 +126,9 @@ describe("handleReminderAlarm - delayed alarm urgency", () => {
   it("exactly at 24-hour threshold is not considered late", async () => {
     vi.mocked(getReminders).mockResolvedValue([makeReminder()]);
 
+    vi.useFakeTimers();
     const now = Date.now();
+    vi.setSystemTime(now);
     const scheduledTime = now - 24 * 60 * 60 * 1000; // exactly 24 hours ago
 
     await handleReminderAlarm("subview:reminder:rem-001", scheduledTime);
