@@ -153,17 +153,19 @@ export async function getSettings(): Promise<UserSettings> {
 }
 
 export async function upsertSettings(partial: Partial<UserSettings>): Promise<UserSettings> {
-  const current = await getSettings();
-  const next = normalizeSettings({
-    ...current,
-    ...partial,
-    keywordOverrides: {
-      ...current.keywordOverrides,
-      ...(partial.keywordOverrides ?? {})
-    }
+  return withStorageWriteLock(async () => {
+    const current = await getSettings();
+    const next = normalizeSettings({
+      ...current,
+      ...partial,
+      keywordOverrides: {
+        ...current.keywordOverrides,
+        ...(partial.keywordOverrides ?? {})
+      }
+    });
+    await storageSet({ [STORAGE_KEYS.settings]: next });
+    return next;
   });
-  await storageSet({ [STORAGE_KEYS.settings]: next });
-  return next;
 }
 
 export async function getReminders(): Promise<ReminderRecord[]> {
@@ -176,10 +178,12 @@ export async function setReminders(reminders: ReminderRecord[]): Promise<void> {
 }
 
 export async function appendDetectionEvent(event: DetectionEvent): Promise<DetectionEvent[]> {
-  const current = (await storageGet<DetectionEvent[]>(STORAGE_KEYS.detectionsRecent)) ?? [];
-  const next = [...current, event].slice(-DETECTION_STORAGE_MAX);
-  await storageSet({ [STORAGE_KEYS.detectionsRecent]: next });
-  return next;
+  return withStorageWriteLock(async () => {
+    const current = (await storageGet<DetectionEvent[]>(STORAGE_KEYS.detectionsRecent)) ?? [];
+    const next = [...current, event].slice(-DETECTION_STORAGE_MAX);
+    await storageSet({ [STORAGE_KEYS.detectionsRecent]: next });
+    return next;
+  });
 }
 
 export async function getDetectionsRecent(): Promise<DetectionEvent[]> {
@@ -191,9 +195,11 @@ export async function getUserPolicyOverrides(): Promise<DarkPatternsMap> {
 }
 
 export async function upsertUserPolicyOverride(domainKey: string, policy: SitePolicy): Promise<void> {
-  const current = await getUserPolicyOverrides();
-  current[domainKey.toLowerCase()] = policy;
-  await storageSet({ [STORAGE_KEYS.darkpatternsUser]: current });
+  await withStorageWriteLock(async () => {
+    const current = await getUserPolicyOverrides();
+    current[domainKey.toLowerCase()] = policy;
+    await storageSet({ [STORAGE_KEYS.darkpatternsUser]: current });
+  });
 }
 
 export async function getSitePolicy(domainKey: string): Promise<SitePolicy | null> {
@@ -209,9 +215,11 @@ export async function getSitePolicy(domainKey: string): Promise<SitePolicy | nul
 }
 
 export async function appendReport(report: UserReport): Promise<void> {
-  const reports = (await storageGet<UserReport[]>(STORAGE_KEYS.userReports)) ?? [];
-  reports.push(report);
-  await storageSet({ [STORAGE_KEYS.userReports]: reports });
+  await withStorageWriteLock(async () => {
+    const reports = (await storageGet<UserReport[]>(STORAGE_KEYS.userReports)) ?? [];
+    reports.push(report);
+    await storageSet({ [STORAGE_KEYS.userReports]: reports });
+  });
 }
 
 export async function getReports(): Promise<UserReport[]> {
@@ -250,13 +258,15 @@ export async function putNotificationMapItem(
   reminderId: string,
   ttlMs = NOTIFICATION_MAP_TTL_MS
 ): Promise<void> {
-  const map = await getNotificationMap();
-  map[notificationId] = {
-    notificationId,
-    reminderId,
-    expiresAt: Date.now() + ttlMs
-  };
-  await storageSet({ [STORAGE_KEYS.notificationMap]: map });
+  await withStorageWriteLock(async () => {
+    const map = await getNotificationMap();
+    map[notificationId] = {
+      notificationId,
+      reminderId,
+      expiresAt: Date.now() + ttlMs
+    };
+    await storageSet({ [STORAGE_KEYS.notificationMap]: map });
+  });
 }
 
 export async function getNotificationMap(): Promise<Record<string, NotificationMapItem>> {
@@ -265,36 +275,40 @@ export async function getNotificationMap(): Promise<Record<string, NotificationM
 }
 
 export async function getReminderIdFromNotification(notificationId: string): Promise<string | null> {
-  const map = await getNotificationMap();
-  const item = map[notificationId];
-  if (!item) {
-    return null;
-  }
+  return withStorageWriteLock(async () => {
+    const map = await getNotificationMap();
+    const item = map[notificationId];
+    if (!item) {
+      return null;
+    }
 
-  if (item.expiresAt <= Date.now()) {
-    delete map[notificationId];
-    await storageSet({ [STORAGE_KEYS.notificationMap]: map });
-    return null;
-  }
+    if (item.expiresAt <= Date.now()) {
+      delete map[notificationId];
+      await storageSet({ [STORAGE_KEYS.notificationMap]: map });
+      return null;
+    }
 
-  return item.reminderId;
+    return item.reminderId;
+  });
 }
 
 export async function pruneNotificationMap(): Promise<void> {
-  const map = await getNotificationMap();
-  const now = Date.now();
-  let dirty = false;
+  await withStorageWriteLock(async () => {
+    const map = await getNotificationMap();
+    const now = Date.now();
+    let dirty = false;
 
-  for (const [notificationId, value] of Object.entries(map)) {
-    if (value.expiresAt <= now) {
-      delete map[notificationId];
-      dirty = true;
+    for (const [notificationId, value] of Object.entries(map)) {
+      if (value.expiresAt <= now) {
+        delete map[notificationId];
+        dirty = true;
+      }
     }
-  }
 
-  if (dirty) {
-    await storageSet({ [STORAGE_KEYS.notificationMap]: map });
-  }
+    if (dirty) {
+      await storageSet({ [STORAGE_KEYS.notificationMap]: map });
+    }
+  });
 }
 
 export async function exportLocalData(): Promise<ImportExportBlob> {
@@ -359,6 +373,25 @@ async function pruneExpiredPendingDetections(map: PendingDetectionMap): Promise<
   }
 
   return next;
+}
+
+// Serialize read-modify-write operations on local storage to prevent lost updates
+// when multiple message handlers run concurrently across `await` points.
+let localStorageWriteLock: Promise<void> = Promise.resolve();
+
+async function withStorageWriteLock<T>(fn: () => Promise<T>): Promise<T> {
+  let releaseLock: () => void;
+  const previous = localStorageWriteLock;
+  localStorageWriteLock = new Promise<void>((resolve) => {
+    releaseLock = resolve;
+  });
+
+  await previous;
+  try {
+    return await fn();
+  } finally {
+    releaseLock!();
+  }
 }
 
 // Serialize read-modify-write operations on the pending-detection map to avoid

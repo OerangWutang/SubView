@@ -34,6 +34,10 @@ export function findManageCandidates(): ManageCandidate[] {
 
   const links = Array.from(document.querySelectorAll("a, button"));
   for (const element of links) {
+    if (element.getClientRects().length === 0) {
+      continue;
+    }
+
     const text = [
       element.textContent ?? "",
       element.getAttribute("aria-label") ?? "",
