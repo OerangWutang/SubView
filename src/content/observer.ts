@@ -106,7 +106,11 @@ export class IncrementalTextObserver {
     }
     this.queue.clear();
     this.queue.add(root);
-    this.schedule();
+    if (this.timer !== null) {
+      window.clearTimeout(this.timer);
+      this.timer = null;
+    }
+    this.flushQueue();
   }
 
   private schedule(): void {
