@@ -227,6 +227,9 @@ export function findDuplicateReminder(
   nowMs: number
 ): ReminderRecord | null {
   for (const reminder of reminders) {
+    if (reminder.status !== "active") {
+      continue;
+    }
     const sameDomain = reminder.domainKey === candidate.domainKey;
     const sameKind = reminder.kind === candidate.kind;
     const sameTrialDays = (reminder.trialDays ?? null) === (candidate.trialDays ?? null);

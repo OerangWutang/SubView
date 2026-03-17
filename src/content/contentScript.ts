@@ -173,7 +173,7 @@ async function run(): Promise<void> {
               domainKey,
               bufferDays,
               manageUrl,
-              dedupeAction: "keep-both",
+              dedupeAction: "update-existing",
               pricePerCycle,
               billingCycle,
               renewalDate,
