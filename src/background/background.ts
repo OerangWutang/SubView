@@ -338,13 +338,14 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
     clearTimeout(existing);
   }
 
+  const url = changeInfo.url;
   _spaNavigateTimers.set(
     tabId,
     setTimeout(() => {
       _spaNavigateTimers.delete(tabId);
       void sendTabMessage(tabId, {
         type: "SPA_NAVIGATED",
-        payload: { url: changeInfo.url! }
+        payload: { url }
       });
     }, SPA_NAVIGATION_DEBOUNCE_MS)
   );
