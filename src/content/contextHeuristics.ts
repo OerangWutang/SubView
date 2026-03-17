@@ -34,8 +34,17 @@ function normalizeText(value: string): string {
   return value.toLowerCase().replace(/\s+/g, " ").trim();
 }
 
+let _commitTermsCache: string[] | null = null;
+let _commitTermsCacheKey: string | null = null;
+
 export function getCommitTerms(overrides?: KeywordOverrides): string[] {
-  return [...BASE_COMMIT_TERMS, ...(overrides?.commit ?? [])].map((value) => normalizeText(value));
+  const cacheKey = JSON.stringify(overrides?.commit ?? null);
+  if (_commitTermsCache && _commitTermsCacheKey === cacheKey) {
+    return _commitTermsCache;
+  }
+  _commitTermsCacheKey = cacheKey;
+  _commitTermsCache = [...BASE_COMMIT_TERMS, ...(overrides?.commit ?? [])].map((value) => normalizeText(value));
+  return _commitTermsCache;
 }
 
 export function evaluateCheckoutContext(url: string, overrides?: KeywordOverrides): CheckoutContextResult {
@@ -44,6 +53,9 @@ export function evaluateCheckoutContext(url: string, overrides?: KeywordOverride
 
   const path = (() => {
     try {
+      if (url === location.href) {
+        return location.pathname.toLowerCase();
+      }
       return new URL(url).pathname.toLowerCase();
     } catch {
       return "";
