@@ -90,6 +90,7 @@ function openOptionsPage(): Promise<void> {
 
 const RESTRICTED_URL_PATTERNS = [
   /^https:\/\/chrome\.google\.com\/webstore/i,
+  /^https:\/\/chromewebstore\.google\.com\//i,
   /^https:\/\/microsoftedge\.microsoft\.com\/addons/i
 ];
 
