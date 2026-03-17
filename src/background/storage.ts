@@ -358,6 +358,12 @@ async function pruneExpiredPendingDetections(map: PendingDetectionMap): Promise<
   return next;
 }
 
+// NOTE: setPendingDetectionForTab and consumePendingDetectionForTab use a
+// read-modify-write pattern. This is safe because the background service worker
+// runs in a single-threaded JavaScript environment — no two message handlers
+// can interleave mid-execution. Tab duplication creates a new tab ID with no
+// pending detection (correct), and rapid refreshes are handled by the TTL-based
+// expiry which prevents stale detections from resurfacing.
 export async function setPendingDetectionForTab(
   tabId: number,
   detection: DetectionResult,

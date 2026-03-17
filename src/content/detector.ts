@@ -16,7 +16,7 @@ const BASE_TRIAL_REGEX = [
 
 const BASE_RENEWAL_REGEX = [
   /renew(s|al)?\s+(at|on)/i,
-  /then\s+([$€£¥₹]|USD|CAD|AUD|GBP|EUR)\s*\d/i,
+  /then\s+(?:(?:[$€£¥₹]|USD|CAD|AUD|GBP|EUR)\s*\d|\d[\d.,]*\s*(?:[$€£¥₹]|USD|CAD|AUD|GBP|EUR))/i,
   /(billed|charged)\s+(monthly|annually|yearly|weekly|per\s+month|per\s+year|per\s+week)/i
 ];
 
@@ -70,6 +70,10 @@ function isCandidateVisible(element?: WeakRef<Element> | null): boolean {
 
   const style = window.getComputedStyle(el);
   if (style.display === "none" || style.visibility === "hidden" || parseFloat(style.opacity) === 0) {
+    return false;
+  }
+
+  if (style.fontSize === "0px" || style.color === "transparent" || style.color === "rgba(0, 0, 0, 0)") {
     return false;
   }
 
@@ -132,10 +136,18 @@ function extractTrialDays(text: string): { days: number; evidence?: string } | n
 }
 
 function extractPriceAfterTrial(text: string): string | undefined {
-  const match = text.match(
+  // Currency-first format: e.g. "then $9.99/month" or "then USD 9.99 per month"
+  const currencyFirstMatch = text.match(
     /(?:then|renew(?:s|al)?(?:\s+at|\s+on)?|billed|charged)[^$€£¥₹\d]{0,20}((?:[$€£¥₹]|USD|CAD|AUD|GBP|EUR)\s?\d+(?:[.,]\d{1,2})?(?:\s*(?:per\s+|\/\s*)?(?:month|year|week|mo|yr))?)/i
   );
-  return match?.[1]?.replace(/\s+/g, " ").trim();
+  if (currencyFirstMatch) {
+    return currencyFirstMatch[1].replace(/\s+/g, " ").trim();
+  }
+  // International/currency-after format: e.g. "then 9.99 USD" or "then 9€"
+  const currencyAfterMatch = text.match(
+    /(?:then|renew(?:s|al)?(?:\s+at|\s+on)?|billed|charged)\s+(\d+(?:[.,]\d{1,2})?\s*(?:[$€£¥₹]|USD|CAD|AUD|GBP|EUR)(?:\s*(?:per\s+|\/\s*)?(?:month|year|week|mo|yr))?)/i
+  );
+  return currencyAfterMatch?.[1]?.replace(/\s+/g, " ").trim();
 }
 
 function extractRenewalPeriod(text: string): string | undefined {
