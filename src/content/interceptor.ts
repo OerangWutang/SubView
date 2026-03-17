@@ -122,9 +122,13 @@ export class CommitInterceptor {
         if (this.blockedClickTarget?.isConnected) {
           clickTarget = this.blockedClickTarget;
         } else if (this.blockedFallbackSelector) {
-          const found = document.querySelector(this.blockedFallbackSelector);
-          if (found instanceof HTMLElement) {
-            clickTarget = found;
+          try {
+            const found = document.querySelector(this.blockedFallbackSelector);
+            if (found instanceof HTMLElement) {
+              clickTarget = found;
+            }
+          } catch {
+            // Treat malformed selectors as "not found" and continue with fallbacks.
           }
         }
 
