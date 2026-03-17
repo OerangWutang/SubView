@@ -8,3 +8,5 @@ export const SCAN_DEBOUNCE_MS = 500;
 export const SCAN_TEXT_CHAR_LIMIT = 30000;
 export const SCAN_MAX_SNIPPETS = 120;
 export const REMINDER_HOUR_LOCAL = 9;
+export const SNOOZE_DURATION_MIN_MS = 60 * 1000;
+export const SNOOZE_DURATION_MAX_MS = 60 * 60 * 1000;

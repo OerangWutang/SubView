@@ -111,6 +111,22 @@ export class SubViewOverlay {
       input[type='number'] { width: 64px; padding: 4px 6px; }
       input[type='date'] { padding: 4px 6px; }
       select { padding: 4px 6px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; }
+      .tg-toast {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 2147483647;
+        background: #1f2937;
+        color: #f9fafb;
+        font: 13px/1.4 ui-sans-serif, system-ui, sans-serif;
+        border-radius: 8px;
+        padding: 10px 16px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        max-width: min(420px, 90vw);
+        text-align: center;
+        pointer-events: none;
+      }
     `;
 
     this.hud = document.createElement("div");
@@ -490,6 +506,14 @@ export class SubViewOverlay {
     this.modalRoot.style.display = "flex";
 
     addReminderButton.focus();
+  }
+
+  showToast(message: string, durationMs = 6000): void {
+    const toast = document.createElement("div");
+    toast.className = "tg-toast";
+    toast.textContent = message;
+    this.shadow.appendChild(toast);
+    setTimeout(() => toast.remove(), durationMs);
   }
 
   destroy(): void {
