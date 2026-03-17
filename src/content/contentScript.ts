@@ -85,7 +85,22 @@ async function run(): Promise<void> {
     });
   };
 
-  const observer = new IncrementalTextObserver((incomingCandidates) => {
+    // After clearing state (e.g., on SPA navigation), ensure the current DOM
+    // is re-sampled even if no further mutations occur by forcing a deferred scan.
+    const triggerRescan = (): void => {
+      if (!document.body) {
+        return;
+      }
+      observer.forceScan(document.body);
+    };
+
+    if (typeof window.requestAnimationFrame === "function") {
+      window.requestAnimationFrame(() => {
+        triggerRescan();
+      });
+    } else {
+      setTimeout(triggerRescan, 0);
+    }
     rollingCandidates.push(...incomingCandidates);
     if (rollingCandidates.length > 220) {
       rollingCandidates.splice(0, rollingCandidates.length - 220);
